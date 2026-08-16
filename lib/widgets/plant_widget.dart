@@ -19,7 +19,12 @@ class PlantWidget extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Text(habit.plantEmoji, style: TextStyle(fontSize: size)),
+      child: Image.asset(
+        habit.plantImagePath,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      ),
     );
   }
 }

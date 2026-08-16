@@ -76,9 +76,11 @@ class HabitsScreen extends StatelessWidget {
                             ),
 
                             child: Center(
-                              child: Text(
-                                habit.plantEmoji,
-                                style: const TextStyle(fontSize: 30),
+                              child: Image.asset(
+                                habit.plantImagePath,
+                                width: 42,
+                                height: 42,
+                                fit: BoxFit.contain,
                               ),
                             ),
                           ),

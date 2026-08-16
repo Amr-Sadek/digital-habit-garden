@@ -15,6 +15,10 @@ class Habit {
     List<String>? completedDates,
   }) : completedDates = completedDates ?? [];
 
+  // ============================================================
+  // CURRENT STREAK
+  // ============================================================
+
   int get currentStreak {
     if (completedDates.isEmpty) {
       return 0;
@@ -46,6 +50,10 @@ class Habit {
     return streak;
   }
 
+  // ============================================================
+  // COMPLETED TODAY
+  // ============================================================
+
   bool get isCompletedToday {
     final today = DateTime.now();
 
@@ -55,102 +63,98 @@ class Habit {
     return completedDates.contains(todayString);
   }
 
+  // ============================================================
+  // PLANT STAGE
+  // ============================================================
+
   String get plantStage {
     final streak = currentStreak;
 
+    // Day 0
     if (streak == 0) {
       return 'seed';
     }
 
-    if (streak <= 2) {
+    // Days 1 - 5
+    if (streak <= 5) {
       return 'sprout';
     }
 
-    if (streak <= 6) {
+    // Days 6 - 10
+    if (streak <= 10) {
+      return 'young_plant';
+    }
+
+    // Days 11 - 15
+    if (streak <= 15) {
       return 'growing';
     }
 
-    return 'mature';
-  }
-
-  String get plantEmoji {
-    switch (plantType) {
-      case 'flower':
-        return _flowerEmoji;
-
-      case 'sunflower':
-        return _sunflowerEmoji;
-
-      case 'tree':
-        return _treeEmoji;
-
-      case 'cactus':
-        return _cactusEmoji;
-
-      default:
-        return '🌱';
+    // Days 16 - 20
+    if (streak <= 20) {
+      return 'strong_plant';
     }
+
+    // Days 21 - 25
+    if (streak <= 25) {
+      return 'mature';
+    }
+
+    // Days 26 - 30
+    if (streak <= 30) {
+      return 'blooming';
+    }
+
+    // Days 31+
+    return 'fully_grown';
   }
 
-  String get _flowerEmoji {
-    switch (plantStage) {
-      case 'seed':
-        return '🌱';
-      case 'sprout':
-        return '🌿';
-      case 'growing':
-        return '🌷';
-      case 'mature':
-        return '🌸';
-      default:
-        return '🌱';
+  // ============================================================
+  // PLANT GROWTH PROGRESS
+  // ============================================================
+  //
+  // Each stage has 5 days:
+  //
+  // Day 1 = 0%
+  // Day 2 = 25%
+  // Day 3 = 50%
+  // Day 4 = 75%
+  // Day 5 = 100%
+  //
+  // When the next stage starts, progress returns to 0%.
+  //
+  // ============================================================
+
+  double get plantGrowthProgress {
+    final streak = currentStreak;
+
+    // Seed
+    if (streak == 0) {
+      return 0.0;
     }
+
+    // Fully grown
+    if (streak >= 35) {
+      return 1.0;
+    }
+
+    // Position inside the current 5-day stage
+    final dayInStage = (streak - 1) % 5;
+
+    return dayInStage / 4;
   }
 
-  String get _sunflowerEmoji {
-    switch (plantStage) {
-      case 'seed':
-        return '🌱';
-      case 'sprout':
-        return '🌿';
-      case 'growing':
-        return '🌻';
-      case 'mature':
-        return '🌻';
-      default:
-        return '🌱';
-    }
+  // ============================================================
+  // PLANT IMAGE
+  // ============================================================
+
+  String get plantImagePath {
+    return 'assets/images/plants/$plantType/$plantStage.png';
   }
 
-  String get _treeEmoji {
-    switch (plantStage) {
-      case 'seed':
-        return '🌱';
-      case 'sprout':
-        return '🌿';
-      case 'growing':
-        return '🌳';
-      case 'mature':
-        return '🌳';
-      default:
-        return '🌱';
-    }
-  }
-
-  String get _cactusEmoji {
-    switch (plantStage) {
-      case 'seed':
-        return '🌱';
-      case 'sprout':
-        return '🌿';
-      case 'growing':
-        return '🌵';
-      case 'mature':
-        return '🌵';
-      default:
-        return '🌱';
-    }
-  }
+  // ============================================================
+  // COMPLETE TODAY
+  // ============================================================
 
   void completeToday() {
     final today = DateTime.now();
@@ -163,6 +167,10 @@ class Habit {
     }
   }
 
+  // ============================================================
+  // UNCOMPLETE TODAY
+  // ============================================================
+
   void uncompleteToday() {
     final today = DateTime.now();
 
@@ -171,6 +179,10 @@ class Habit {
 
     completedDates.remove(todayString);
   }
+
+  // ============================================================
+  // JSON
+  // ============================================================
 
   Map<String, dynamic> toJson() {
     return {
@@ -182,6 +194,10 @@ class Habit {
       'completedDates': completedDates,
     };
   }
+
+  // ============================================================
+  // FROM JSON
+  // ============================================================
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(

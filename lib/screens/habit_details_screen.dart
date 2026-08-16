@@ -67,8 +67,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
     final bestStreak = _calculateBestStreak();
     final completedToday = _completedToday;
 
-    final growthProgress = _growthProgress(habit.plantStage);
-
+    final growthProgress = habit.plantGrowthProgress;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -143,9 +142,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     ),
 
                     child: Center(
-                      child: Text(
-                        habit.plantEmoji,
-                        style: const TextStyle(fontSize: 68),
+                      child: Image.asset(
+                        habit.plantImagePath,
+                        width: 95,
+                        height: 95,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
@@ -543,41 +544,28 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
       case 'sprout':
         return 'Sprout';
 
+      case 'young_plant':
+        return 'Young Plant';
+
       case 'growing':
         return 'Growing';
+
+      case 'strong_plant':
+        return 'Strong Plant';
 
       case 'mature':
         return 'Mature';
 
+      case 'blooming':
+        return 'Blooming';
+
+      case 'fully_grown':
+        return 'Fully Grown';
+
       default:
         return 'Seed';
     }
-  }
-
-  // =============================================================
-  // GROWTH PROGRESS
-  // =============================================================
-
-  double _growthProgress(String stage) {
-    switch (stage) {
-      case 'seed':
-        return 0.20;
-
-      case 'sprout':
-        return 0.45;
-
-      case 'growing':
-        return 0.70;
-
-      case 'mature':
-        return 1.0;
-
-      default:
-        return 0.20;
-    }
-  }
-
-  // =============================================================
+  } // =============================================================
   // BEST STREAK
   // =============================================================
 
