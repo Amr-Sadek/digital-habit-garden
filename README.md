@@ -1,72 +1,77 @@
 # 🌱 Digital Habit Garden
 
-Digital Habit Garden is a Flutter mobile application that turns daily habits into a growing virtual garden.
+Digital Habit Garden is a Flutter mobile application that helps users build positive habits through a visual and interactive virtual garden.
 
-Every time users complete a positive habit, their plants grow. Maintaining consistent habits helps users build streaks and unlock new plant species, making habit tracking more visual and motivating.
+Every completed habit contributes to the growth of a digital plant. Maintaining consistent habits builds streaks and unlocks new plant species, making habit tracking more engaging and motivating.
 
 ## ✨ Features
 
 - 🌱 Create and track daily habits
-- 🔥 Track current and best habit streaks
-- 🌿 Grow virtual plants through habit completion
+- 🔥 Track habit streaks
+- 🌿 Grow digital plants through habit completion
 - 🌻 Unlock new plant species based on streak progress
-- 🌳 Visualize habit progress through plant growth
-- 🏡 Customize the garden atmosphere with different garden styles
-- 📊 View weekly activity and habit performance
-- 📅 View habit activity history
-- 🔔 Daily reminder notifications
+- 🏡 Customize the garden with different themes
+- 📊 Track weekly activity and progress
+- 🔔 Daily habit reminders
 - 🌙 Light and Dark themes
 - 🌐 English and Arabic language support
-- 📱 Share your garden as a screenshot
+- 📤 Share your garden
 
-## 🛠️ Tech Stack
+## 🛠️ Built With
 
-- **Flutter**
-- **Dart**
-- **SharedPreferences**
-- **Flutter Local Notifications**
+- Flutter
+- Dart
+- SharedPreferences
+- Flutter Local Notifications
 
-## 🌿 How It Works
+## 🌱 How It Works
 
-The application connects habit consistency with visual plant growth:
-
-1. Create a positive daily habit.
+1. Create a habit.
 2. Complete the habit each day.
 3. Build and maintain your streak.
-4. Watch your virtual plant grow.
-5. Unlock new plant species as your streak improves.
+4. Watch your plant grow.
+5. Unlock new plant species as your streak increases.
 6. Customize your garden and track your progress.
 
 ## 📱 Screenshots
 
-### My Garden
+### Home
 
-<p align="center">
-  <img src="Screenshots/customer/My Garden.png" width="250"/>
-</p>
+![Home](screenshots/home.jpeg)
 
-### Habit Details
+### Habits
 
-<p align="center">
-  <img src="Screenshots/customer/Habit Details.png" width="250"/>
-</p>
+![Habits](screenshots/habits.jpeg)
 
 ### Progress
 
-<p align="center">
-  <img src="Screenshots/customer/Progress.png" width="250"/>
-</p>
+![Progress](screenshots/progress.jpeg)
+
+### Garden
+
+![Garden](screenshots/garden.jpeg)
+
+### Profile
+
+![Profile](screenshots/profile.jpeg)
+
+### Settings
+
+![Settings](screenshots/settings.jpeg)
+
+## 📥 Download
+
+The latest Android release is available here:
+
+[Download Digital Habit Garden v1.0.0](https://github.com/Amr-Sadek/digital-habit-garden/releases/tag/v1.0.0)
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Requirements
 
-Make sure you have:
-
-- Flutter SDK installed
+- Flutter SDK
 - Dart SDK
 - Android Studio or another Flutter-compatible IDE
-- An Android/iOS device or emulator
 
 ### Installation
 
