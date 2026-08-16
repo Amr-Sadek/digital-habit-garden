@@ -35,29 +35,44 @@ Every completed habit contributes to the growth of a digital plant. Maintaining 
 
 ## 📱 Screenshots
 
-### Home
-
-![Home](screenshots/home.jpeg)
-
-### Habits
-
-![Habits](screenshots/habits.jpeg)
-
-### Progress
-
-![Progress](screenshots/progress.jpeg)
-
-### Garden
-
-![Garden](screenshots/garden.jpeg)
-
-### Profile
-
-![Profile](screenshots/profile.jpeg)
-
-### Settings
-
-![Settings](screenshots/settings.jpeg)
+<table>
+  <tr>
+    <td align="center">
+      <img src="screenshots/home.jpeg" width="300"/>
+      <br>
+      <b>Home</b>
+    </td>
+    <td align="center">
+      <img src="screenshots/habits.jpeg" width="300"/>
+      <br>
+      <b>Habits</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/progress.jpeg" width="300"/>
+      <br>
+      <b>Progress</b>
+    </td>
+    <td align="center">
+      <img src="screenshots/garden.jpeg" width="300"/>
+      <br>
+      <b>Garden</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/profile.jpeg" width="300"/>
+      <br>
+      <b>Profile</b>
+    </td>
+    <td align="center">
+      <img src="screenshots/settings.jpeg" width="300"/>
+      <br>
+      <b>Settings</b>
+    </td>
+  </tr>
+</table>
 
 ## 📥 Download
 
