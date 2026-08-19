@@ -1,7 +1,7 @@
 # 🌱 Digital Habit Garden
 
 <p align="center">
-  <img src="screenshots/cover.png" width="100%"/>
+  <img src="./screenshots/cover.png" width="100%"/>
 </p>
 
 Digital Habit Garden is a Flutter mobile application that helps users build and maintain positive daily habits through a visual and interactive virtual garden.
