@@ -1,20 +1,21 @@
 # 🌱 Digital Habit Garden
 
-Digital Habit Garden is a Flutter mobile application that helps users build positive habits through a visual and interactive virtual garden.
+Digital Habit Garden is a Flutter mobile application that helps users build and maintain positive daily habits through a visual and interactive virtual garden.
 
-Every completed habit contributes to the growth of a digital plant. Maintaining consistent habits builds streaks and unlocks new plant species, making habit tracking more engaging and motivating.
+The app turns completed habits into growing digital plants, allowing users to build streaks, track their progress, customize their garden, and stay motivated through visual growth.
 
 ## ✨ Features
 
 - 🌱 Create and track daily habits
-- 🔥 Track habit streaks
-- 🌿 Grow digital plants through habit completion
-- 🌻 Unlock new plant species based on streak progress
+- 🔥 Track habit streaks and consistency
+- 🌿 Grow digital plants based on habit completion
+- 🌻 Unlock different plant types and growth stages
 - 🏡 Customize the garden with different themes
-- 📊 Track weekly activity and progress
-- 🔔 Daily habit reminders
+- 📊 Track weekly activity and habit progress
+- 🔔 Receive daily habit reminders
 - 🌙 Light and Dark themes
 - 🌐 English and Arabic language support
+- 👤 Manage profile information
 - 📤 Share your garden
 
 ## 🛠️ Built With
@@ -23,51 +24,48 @@ Every completed habit contributes to the growth of a digital plant. Maintaining 
 - Dart
 - SharedPreferences
 - Flutter Local Notifications
-
-## 🌱 How It Works
-
-1. Create a habit.
-2. Complete the habit each day.
-3. Build and maintain your streak.
-4. Watch your plant grow.
-5. Unlock new plant species as your streak increases.
-6. Customize your garden and track your progress.
+- Timezone
+- Flutter Timezone
+- Screenshot
+- Share Plus
+- Path Provider
+- Image Picker
 
 ## 📱 Screenshots
 
 <table>
   <tr>
     <td align="center">
-      <img src="screenshots/home.jpeg" width="300"/>
+      <img src="screenshots/home.jpeg" width="250"/>
       <br>
       <b>Home</b>
     </td>
     <td align="center">
-      <img src="screenshots/habits.jpeg" width="300"/>
+      <img src="screenshots/habits.jpeg" width="250"/>
       <br>
       <b>Habits</b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="screenshots/progress.jpeg" width="300"/>
-      <br>
-      <b>Progress</b>
-    </td>
-    <td align="center">
-      <img src="screenshots/garden.jpeg" width="300"/>
+      <img src="screenshots/garden.jpeg" width="250"/>
       <br>
       <b>Garden</b>
+    </td>
+    <td align="center">
+      <img src="screenshots/progress.jpeg" width="250"/>
+      <br>
+      <b>Progress</b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="screenshots/profile.jpeg" width="300"/>
+      <img src="screenshots/profile.jpeg" width="250"/>
       <br>
       <b>Profile</b>
     </td>
     <td align="center">
-      <img src="screenshots/settings.jpeg" width="300"/>
+      <img src="screenshots/settings.jpeg" width="250"/>
       <br>
       <b>Settings</b>
     </td>
@@ -78,7 +76,7 @@ Every completed habit contributes to the growth of a digital plant. Maintaining 
 
 The latest Android release is available here:
 
-[Download Digital Habit Garden v1.0.0](https://github.com/Amr-Sadek/digital-habit-garden/releases/tag/v1.0.0)
+[Download Digital Habit Garden](https://github.com/Amr-Sadek/digital-habit-garden/releases)
 
 ## 🚀 Getting Started
 
@@ -86,11 +84,29 @@ The latest Android release is available here:
 
 - Flutter SDK
 - Dart SDK
-- Android Studio or another Flutter-compatible IDE
+- Android Studio
+- Android device or emulator
 
 ### Installation
 
 Clone the repository:
 
-```bash
-git clone https://github.com/Amr-Sadek/digital-habit-garden.git
+`git clone https://github.com/Amr-Sadek/digital-habit-garden.git`
+
+Navigate to the project:
+
+`cd digital-habit-garden`
+
+Install dependencies:
+
+`flutter pub get`
+
+Run the application:
+
+`flutter run`
+
+## 👨‍💻 Author
+
+**Amr Sadek**
+
+Flutter Developer
