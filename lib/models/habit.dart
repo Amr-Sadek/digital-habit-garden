@@ -6,6 +6,14 @@ class Habit {
   DateTime createdAt;
   List<String> completedDates;
 
+  // ============================================================
+  // REMINDER
+  // ============================================================
+
+  bool reminderEnabled;
+  int? reminderHour;
+  int? reminderMinute;
+
   Habit({
     required this.id,
     required this.name,
@@ -13,6 +21,11 @@ class Habit {
     required this.plantType,
     required this.createdAt,
     List<String>? completedDates,
+
+    // Reminder
+    this.reminderEnabled = false,
+    this.reminderHour,
+    this.reminderMinute,
   }) : completedDates = completedDates ?? [];
 
   // ============================================================
@@ -27,24 +40,24 @@ class Habit {
     final dates = completedDates
         .map((date) => DateTime.parse(date))
         .map((date) => DateTime(date.year, date.month, date.day))
-        .toSet()
-        .toList();
+        .toSet();
 
-    dates.sort((a, b) => b.compareTo(a));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
+    DateTime expectedDate;
+
+    if (isCompletedToday) {
+      expectedDate = today;
+    } else {
+      expectedDate = today.subtract(const Duration(days: 1));
+    }
 
     int streak = 0;
-    DateTime expectedDate = todayDate;
 
-    for (final date in dates) {
-      if (date == expectedDate) {
-        streak++;
-        expectedDate = expectedDate.subtract(const Duration(days: 1));
-      } else if (date.isBefore(expectedDate)) {
-        break;
-      }
+    while (dates.contains(expectedDate)) {
+      streak++;
+      expectedDate = expectedDate.subtract(const Duration(days: 1));
     }
 
     return streak;
@@ -70,75 +83,52 @@ class Habit {
   String get plantStage {
     final streak = currentStreak;
 
-    // Day 0
     if (streak == 0) {
       return 'seed';
     }
 
-    // Days 1 - 5
     if (streak <= 5) {
       return 'sprout';
     }
 
-    // Days 6 - 10
     if (streak <= 10) {
       return 'young_plant';
     }
 
-    // Days 11 - 15
     if (streak <= 15) {
       return 'growing';
     }
 
-    // Days 16 - 20
     if (streak <= 20) {
       return 'strong_plant';
     }
 
-    // Days 21 - 25
     if (streak <= 25) {
       return 'mature';
     }
 
-    // Days 26 - 30
     if (streak <= 30) {
       return 'blooming';
     }
 
-    // Days 31+
     return 'fully_grown';
   }
 
   // ============================================================
   // PLANT GROWTH PROGRESS
   // ============================================================
-  //
-  // Each stage has 5 days:
-  //
-  // Day 1 = 0%
-  // Day 2 = 25%
-  // Day 3 = 50%
-  // Day 4 = 75%
-  // Day 5 = 100%
-  //
-  // When the next stage starts, progress returns to 0%.
-  //
-  // ============================================================
 
   double get plantGrowthProgress {
     final streak = currentStreak;
 
-    // Seed
     if (streak == 0) {
       return 0.0;
     }
 
-    // Fully grown
     if (streak >= 35) {
       return 1.0;
     }
 
-    // Position inside the current 5-day stage
     final dayInStage = (streak - 1) % 5;
 
     return dayInStage / 4;
@@ -192,6 +182,11 @@ class Habit {
       'plantType': plantType,
       'createdAt': createdAt.toIso8601String(),
       'completedDates': completedDates,
+
+      // Reminder
+      'reminderEnabled': reminderEnabled,
+      'reminderHour': reminderHour,
+      'reminderMinute': reminderMinute,
     };
   }
 
@@ -207,6 +202,11 @@ class Habit {
       plantType: json['plantType'],
       createdAt: DateTime.parse(json['createdAt']),
       completedDates: List<String>.from(json['completedDates'] ?? []),
+
+      // Reminder
+      reminderEnabled: json['reminderEnabled'] ?? false,
+      reminderHour: json['reminderHour'],
+      reminderMinute: json['reminderMinute'],
     );
   }
 }

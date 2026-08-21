@@ -40,8 +40,64 @@ class _GardenScreenState extends State<GardenScreen> {
   AppStrings get strings => AppStringsScope.of(context);
 
   final GlobalKey _gardenKey = GlobalKey();
+  final PageController _gardenPageController = PageController();
 
   int? _selectedPlantIndex;
+  int _currentGardenPage = 0;
+
+  static const int _plantsPerGarden = 3;
+  static const int _gardenCount = 4;
+
+  @override
+  void dispose() {
+    _gardenPageController.dispose();
+    super.dispose();
+  }
+
+  int get _gardenPageCount {
+    if (widget.habits.isEmpty) {
+      return 1;
+    }
+
+    return _gardenCount;
+  }
+
+  List<Habit> _habitsForGarden(int gardenIndex) {
+    final start = gardenIndex * _plantsPerGarden;
+
+    if (start >= widget.habits.length) {
+      return [];
+    }
+
+    final end = (start + _plantsPerGarden)
+        .clamp(0, widget.habits.length)
+        .toInt();
+
+    return widget.habits.sublist(start, end);
+  }
+
+  String _gardenImagePath(int gardenIndex) {
+    final gardenNumber = (gardenIndex + 1).toString().padLeft(2, '0');
+
+    final time = widget.gardenTheme == GardenTheme.night ? 'night' : 'morning';
+
+    return 'assets/images/gardens/'
+        'garden_${gardenNumber}_$time.jpg';
+  }
+
+  _GardenLayout _currentGardenLayout() {
+    return _gardenLayout(_currentGardenPage);
+  }
+
+  _GardenLayout _gardenLayout(int gardenIndex) {
+    final layouts = widget.gardenTheme == GardenTheme.night
+        ? _nightGardenLayouts
+        : _morningGardenLayouts;
+
+    final safeIndex = gardenIndex.clamp(0, layouts.length - 1).toInt();
+
+    return layouts[safeIndex];
+  }
 
   // ============================================================
   // CAPTURE GARDEN
@@ -117,8 +173,6 @@ class _GardenScreenState extends State<GardenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppStringsScope.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.myGarden),
@@ -128,7 +182,6 @@ class _GardenScreenState extends State<GardenScreen> {
             onPressed: widget.habits.isEmpty ? null : _shareGarden,
             icon: const Icon(Icons.share_outlined),
           ),
-
           IconButton(
             tooltip: strings.customizeGarden,
             onPressed: () => _showThemePicker(context),
@@ -136,7 +189,6 @@ class _GardenScreenState extends State<GardenScreen> {
           ),
         ],
       ),
-
       body: widget.habits.isEmpty ? _buildEmptyGarden() : _buildGarden(),
     );
   }
@@ -149,36 +201,29 @@ class _GardenScreenState extends State<GardenScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
-
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
             Container(
               width: 110,
               height: 110,
-
               decoration: const BoxDecoration(
                 color: Color(0xFFE8F3E2),
                 shape: BoxShape.circle,
               ),
-
+              alignment: Alignment.center,
               child: const Icon(
                 Icons.yard_outlined,
                 size: 56,
                 color: Color(0xFF3E7C4A),
               ),
             ),
-
             const SizedBox(height: 20),
-
             Text(
               strings.gardenWaiting,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               strings.gardenEmptyDescription,
               textAlign: TextAlign.center,
@@ -195,22 +240,21 @@ class _GardenScreenState extends State<GardenScreen> {
   // ============================================================
 
   Widget _buildGarden() {
-    final completed = widget.habits.where((h) => h.isCompletedToday).length;
+    final completed = widget.habits
+        .where((habit) => habit.isCompletedToday)
+        .length;
 
     final completion = completed / widget.habits.length;
 
     final bestStreak = widget.habits
-        .map((h) => h.currentStreak)
+        .map((habit) => habit.currentStreak)
         .fold<int>(0, (max, value) => value > max ? value : max);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           _buildHeader(completed, completion, bestStreak),
 
@@ -237,18 +281,14 @@ class _GardenScreenState extends State<GardenScreen> {
   Widget _buildHeader(int completed, double completion, int bestStreak) {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.all(20),
-
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF2F7D4A), Color(0xFF68A95D)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-
         borderRadius: BorderRadius.circular(26),
-
         boxShadow: const [
           BoxShadow(
             color: Color(0x223E7C4A),
@@ -257,10 +297,8 @@ class _GardenScreenState extends State<GardenScreen> {
           ),
         ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           Text(
             strings.yourGarden,
@@ -286,13 +324,9 @@ class _GardenScreenState extends State<GardenScreen> {
           Row(
             children: [
               _headerStat('${widget.habits.length}', strings.growingPlants),
-
               _headerDivider(),
-
               _headerStat('$completed/${widget.habits.length}', strings.today),
-
               _headerDivider(),
-
               _headerStat('$bestStreak', strings.bestStreak),
             ],
           ),
@@ -301,13 +335,10 @@ class _GardenScreenState extends State<GardenScreen> {
 
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
-
             child: LinearProgressIndicator(
               value: completion,
               minHeight: 7,
-
               backgroundColor: Colors.white.withValues(alpha: .20),
-
               color: Colors.white,
             ),
           ),
@@ -316,7 +347,6 @@ class _GardenScreenState extends State<GardenScreen> {
 
           Text(
             strings.habitsCompleted(completed, widget.habits.length),
-
             style: TextStyle(
               color: Colors.white.withValues(alpha: .72),
               fontSize: 11.5,
@@ -327,31 +357,22 @@ class _GardenScreenState extends State<GardenScreen> {
     );
   }
 
-  // ============================================================
-  // HEADER STAT
-  // ============================================================
-
   Widget _headerStat(String value, String label) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           Text(
             value,
-
             style: const TextStyle(
               color: Colors.white,
               fontSize: 19,
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 2),
-
           Text(
             label,
-
             style: TextStyle(
               color: Colors.white.withValues(alpha: .68),
               fontSize: 10.5,
@@ -362,17 +383,11 @@ class _GardenScreenState extends State<GardenScreen> {
     );
   }
 
-  // ============================================================
-  // HEADER DIVIDER
-  // ============================================================
-
   Widget _headerDivider() {
     return Container(
       width: 1,
       height: 32,
-
       margin: const EdgeInsets.symmetric(horizontal: 12),
-
       color: Colors.white.withValues(alpha: .18),
     );
   }
@@ -382,84 +397,314 @@ class _GardenScreenState extends State<GardenScreen> {
   // ============================================================
 
   Widget _buildInteractiveGarden() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    final layout = _currentGardenLayout();
 
-      width: double.infinity,
-      height: 480,
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topCenter,
+      child: AspectRatio(
+        aspectRatio: layout.aspectRatio,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ==================================================
+              // BACKGROUND
+              // ==================================================
+              PageView.builder(
+                controller: _gardenPageController,
+                itemCount: _gardenPageCount,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentGardenPage = index;
+                    _selectedPlantIndex = null;
+                  });
+                },
+                itemBuilder: (context, gardenIndex) {
+                  return _buildGardenPage(gardenIndex);
+                },
+              ),
 
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+              // ==================================================
+              // TOP HINT
+              // ==================================================
+              Positioned(top: 16, left: 16, right: 16, child: _gardenHint()),
 
-        border: Border.all(
-          color: _gardenBorderColor.withValues(alpha: .75),
-          width: 1.2,
+              // ==================================================
+              // PAGE DOTS ONLY
+              // ==================================================
+              if (_gardenPageCount > 1)
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: _buildGardenPageIndicator(),
+                ),
+            ],
+          ),
         ),
-
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x183E7C4A),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-
-      clipBehavior: Clip.antiAlias,
-
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(painter: _GardenPainter(widget.gardenTheme)),
-          ),
-
-          Positioned(top: 16, left: 16, right: 16, child: _gardenHint()),
-
-          ..._buildPlantPositions(),
-
-          Positioned(left: 16, bottom: 14, child: _gardenLegend()),
-        ],
       ),
     );
   }
 
   // ============================================================
-  // PLANT POSITIONS
+  // GARDEN PAGE
   // ============================================================
 
-  List<Widget> _buildPlantPositions() {
-    const positions = <_PlantPosition>[
-      _PlantPosition(.10, .25, 0.92),
-      _PlantPosition(.36, .19, 1.02),
-      _PlantPosition(.66, .26, .94),
-      _PlantPosition(.22, .50, 1.00),
-      _PlantPosition(.50, .46, 1.08),
-      _PlantPosition(.77, .52, .96),
-      _PlantPosition(.35, .70, .94),
-      _PlantPosition(.62, .69, 1.00),
-    ];
+  Widget _buildGardenPage(int gardenIndex) {
+    final gardenHabits = _habitsForGarden(gardenIndex);
 
-    return List.generate(widget.habits.length, (index) {
-      final p = positions[index % positions.length];
+    final layout = _gardenLayout(gardenIndex);
 
-      final row = index ~/ positions.length;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.none,
+          children: [
+            // ==================================================
+            // IMAGE
+            // ==================================================
+            Positioned.fill(
+              child: Image.asset(
+                _gardenImagePath(gardenIndex),
+                fit: BoxFit.fill,
+                alignment: Alignment.center,
+                errorBuilder: (context, error, stackTrace) {
+                  return const ColoredBox(
+                    color: Color(0xFF101710),
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        size: 50,
+                        color: Color(0xFF3E7C4A),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
 
-      final extraY = row * .10;
+            // ==================================================
+            // PLANTS
+            // ==================================================
+            ..._buildGardenPlants(
+              gardenIndex,
+              gardenHabits,
+              layout,
+              constraints,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // GARDEN PLANTS
+  // ============================================================
+
+  List<Widget> _buildGardenPlants(
+    int gardenIndex,
+    List<Habit> gardenHabits,
+    _GardenLayout layout,
+    BoxConstraints constraints,
+  ) {
+    return List.generate(gardenHabits.length, (localIndex) {
+      final habit = gardenHabits[localIndex];
+
+      final globalIndex = gardenIndex * _plantsPerGarden + localIndex;
+
+      final spot = layout.spots[localIndex];
+
+      final plantSize = spot.plantSize;
+
+      // ------------------------------------------------------
+      // The x/y point is the EXACT CENTER
+      // of the soil planting area.
+      // ------------------------------------------------------
+
+      final centerX = constraints.maxWidth * spot.x;
+
+      final centerY = constraints.maxHeight * spot.y;
+
+      // ------------------------------------------------------
+      // Large invisible hit area.
+      // The actual pot remains perfectly centered.
+      // ------------------------------------------------------
+
+      const hitWidth = 130.0;
+
+      final hitHeight = plantSize + 72;
+
+      final left = centerX - (hitWidth / 2);
+
+      final top = centerY - (plantSize / 2);
 
       return Positioned(
-        left: MediaQuery.of(context).size.width * p.x * .72,
-
-        top: 110 + 280 * (p.y + extraY),
-
+        left: left,
+        top: top,
+        width: hitWidth,
+        height: hitHeight,
         child: _GardenPlant(
-          habit: widget.habits[index],
-          scale: p.scale,
-          selected: _selectedPlantIndex == index,
-          onTap: () => _selectPlant(index),
+          habit: habit,
+          plantSize: plantSize,
+          selected: _selectedPlantIndex == globalIndex,
+          onTap: () => _selectPlant(globalIndex),
         ),
       );
     });
   }
+
+  // ============================================================
+  // MORNING GARDEN POSITIONS
+  // ============================================================
+
+  static const List<_GardenLayout> _morningGardenLayouts = [
+    // ==========================================================
+    // GARDEN 01
+    // ==========================================================
+    _GardenLayout(
+      aspectRatio: 537 / 497,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.474, y: 0.505, plantSize: 56),
+
+        // Left / foreground
+        _PlantSpot(x: 0.170, y: 0.593, plantSize: 65),
+
+        // Right / foreground
+        _PlantSpot(x: 0.788, y: 0.595, plantSize: 67),
+      ],
+    ),
+
+    // ==========================================================
+    // GARDEN 02
+    // ==========================================================
+    _GardenLayout(
+      aspectRatio: 536 / 493,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.515, y: 0.585, plantSize: 60),
+
+        // Left
+        _PlantSpot(x: 0.302, y: 0.700, plantSize: 70),
+
+        // Right
+        _PlantSpot(x: 0.750, y: 0.705, plantSize: 73),
+      ],
+    ),
+
+    // ==========================================================
+    // GARDEN 03
+    // ==========================================================
+    _GardenLayout(
+      aspectRatio: 544 / 492,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.490, y: 0.240, plantSize: 55),
+
+        // Left
+        _PlantSpot(x: 0.210, y: 0.363, plantSize: 65),
+
+        // Right
+        _PlantSpot(x: 0.740, y: 0.355, plantSize: 65),
+      ],
+    ),
+
+    // ==========================================================
+    // GARDEN 04
+    // ==========================================================
+    _GardenLayout(
+      aspectRatio: 535 / 492,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.480, y: 0.380, plantSize: 40),
+
+        // Left
+        _PlantSpot(x: 0.152, y: 0.440, plantSize: 55),
+
+        // Large front / center
+        _PlantSpot(x: 0.477, y: 0.685, plantSize: 75),
+      ],
+    ),
+  ];
+
+  // ============================================================
+  // NIGHT GARDEN POSITIONS
+  // ============================================================
+
+  static const List<_GardenLayout> _nightGardenLayouts = [
+    // ----------------------------------------------------------
+    // GARDEN 01
+    // ----------------------------------------------------------
+    _GardenLayout(
+      aspectRatio: 539 / 491,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.474, y: 0.505, plantSize: 56),
+
+        // Left / foreground
+        _PlantSpot(x: 0.170, y: 0.593, plantSize: 65),
+
+        // Right / foreground
+        _PlantSpot(x: 0.788, y: 0.595, plantSize: 67),
+      ],
+    ),
+
+    // ----------------------------------------------------------
+    // GARDEN 02
+    // ----------------------------------------------------------
+    _GardenLayout(
+      aspectRatio: 530 / 490,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.515, y: 0.585, plantSize: 60),
+
+        // Left
+        _PlantSpot(x: 0.302, y: 0.700, plantSize: 70),
+
+        // Right
+        _PlantSpot(x: 0.750, y: 0.705, plantSize: 73),
+      ],
+    ),
+
+    // ----------------------------------------------------------
+    // GARDEN 03
+    // ----------------------------------------------------------
+    _GardenLayout(
+      aspectRatio: 537 / 486,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.490, y: 0.240, plantSize: 55),
+
+        // Left
+        _PlantSpot(x: 0.210, y: 0.363, plantSize: 65),
+
+        // Right
+        _PlantSpot(x: 0.750, y: 0.345, plantSize: 65),
+      ],
+    ),
+
+    // ----------------------------------------------------------
+    // GARDEN 04
+    // ----------------------------------------------------------
+    _GardenLayout(
+      aspectRatio: 535 / 487,
+      spots: [
+        // Center / back
+        _PlantSpot(x: 0.480, y: 0.370, plantSize: 40),
+
+        // Left
+        _PlantSpot(x: 0.152, y: 0.433, plantSize: 55),
+
+        // Large front / center
+        _PlantSpot(x: 0.477, y: 0.680, plantSize: 75),
+      ],
+    ),
+  ];
 
   // ============================================================
   // SELECT PLANT
@@ -474,7 +719,6 @@ class _GardenScreenState extends State<GardenScreen> {
 
     await Navigator.push(
       context,
-
       MaterialPageRoute(
         builder: (context) => HabitDetailsScreen(
           habit: habit,
@@ -495,54 +739,28 @@ class _GardenScreenState extends State<GardenScreen> {
   }
 
   // ============================================================
-  // DETAIL TILE
+  // PAGE INDICATOR
   // ============================================================
 
-  Widget _detailTile(IconData icon, String value, String label) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildGardenPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_gardenPageCount, (index) {
+        final selected = index == _currentGardenPage;
 
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
-
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF202A21) : const Color(0xFFF5F8F3),
-          borderRadius: BorderRadius.circular(17),
-        ),
-
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: AppTheme.primaryColor),
-
-            const SizedBox(width: 8),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                children: [
-                  Text(
-                    value,
-
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-
-                  Text(
-                    label,
-
-                    style: TextStyle(
-                      color: isDark
-                          ? AppTheme.darkSecondaryText
-                          : Colors.grey.shade600,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: selected ? 20 : 7,
+          height: 7,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppTheme.primaryColor
+                : Colors.white.withValues(alpha: .65),
+            borderRadius: BorderRadius.circular(20),
+          ),
+        );
+      }),
     );
   }
 
@@ -555,26 +773,18 @@ class _GardenScreenState extends State<GardenScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xDD202A21)
-            : Colors.white.withValues(alpha: .82),
+            : Colors.black.withValues(alpha: .42),
         borderRadius: BorderRadius.circular(17),
-
-        border: Border.all(
-          color: isDark
-              ? const Color(0xFF536455)
-              : Colors.white.withValues(alpha: .7),
-        ),
       ),
-
       child: Row(
         children: [
           const Icon(
             Icons.touch_app_outlined,
             size: 20,
-            color: Color(0xFF3E7C4A),
+            color: Color(0xFF63B76A),
           ),
 
           const SizedBox(width: 9),
@@ -584,50 +794,11 @@ class _GardenScreenState extends State<GardenScreen> {
               strings.isArabic
                   ? 'اضغط على النبات لرؤية نموه'
                   : 'Tap a plant to see its growth',
-
-              style: TextStyle(
-                color: _gardenTextColor,
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // GARDEN LEGEND
-  // ============================================================
-
-  Widget _gardenLegend() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xCC202A21)
-            : Colors.white.withValues(alpha: .78),
-        borderRadius: BorderRadius.circular(14),
-        border: isDark ? Border.all(color: const Color(0xFF536455)) : null,
-      ),
-
-      child: Row(
-        children: [
-          const Icon(Icons.eco_outlined, size: 16, color: Color(0xFF3E7C4A)),
-
-          const SizedBox(width: 6),
-
-          Text(
-            strings.plantsGrowing(widget.habits.length),
-
-            style: TextStyle(
-              color: _gardenTextColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -645,14 +816,12 @@ class _GardenScreenState extends State<GardenScreen> {
         Expanded(
           child: Text(
             strings.yourPlants,
-
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
           ),
         ),
 
         Text(
           strings.growingCount(widget.habits.length),
-
           style: TextStyle(
             color: Colors.grey.shade600,
             fontSize: 12,
@@ -669,35 +838,29 @@ class _GardenScreenState extends State<GardenScreen> {
 
   Widget _buildGrowthCard(Habit habit) {
     final progress = (habit.currentStreak / 7).clamp(0.0, 1.0);
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-
       padding: const EdgeInsets.all(14),
-
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(
           color: isDark ? const Color(0xFF344035) : const Color(0xFFE4EAE1),
         ),
       ),
-
       child: Row(
         children: [
           Container(
             width: 58,
             height: 58,
-
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF263A28) : const Color(0xFFEAF4E7),
               shape: BoxShape.circle,
             ),
-
             alignment: Alignment.center,
-
             child: PlantWidget(habit: habit, size: 40),
           ),
 
@@ -706,11 +869,9 @@ class _GardenScreenState extends State<GardenScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 Text(
                   habit.name,
-
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
 
@@ -721,7 +882,6 @@ class _GardenScreenState extends State<GardenScreen> {
                     strings.stageName(_stageName(habit)),
                     habit.currentStreak,
                   ),
-
                   style: TextStyle(
                     color: isDark
                         ? AppTheme.darkSecondaryText
@@ -735,11 +895,8 @@ class _GardenScreenState extends State<GardenScreen> {
                 LinearProgressIndicator(
                   value: progress,
                   minHeight: 7,
-
                   borderRadius: BorderRadius.circular(10),
-
                   color: AppTheme.primaryColor,
-
                   backgroundColor: isDark
                       ? const Color(0xFF343D35)
                       : Colors.grey.shade200,
@@ -784,42 +941,32 @@ class _GardenScreenState extends State<GardenScreen> {
 
     showModalBottomSheet(
       context: context,
-
       backgroundColor: isDark ? const Color(0xFF182019) : Colors.white,
-
       isScrollControlled: true,
-
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 25),
-
             child: Column(
               mainAxisSize: MainAxisSize.min,
-
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 Row(
                   children: [
                     Expanded(
                       child: Text(
                         strings.gardenStyle,
-
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-
                     IconButton(
                       onPressed: () => Navigator.pop(sheetContext),
-
                       icon: const Icon(Icons.close),
                     ),
                   ],
@@ -828,8 +975,9 @@ class _GardenScreenState extends State<GardenScreen> {
                 const SizedBox(height: 5),
 
                 Text(
-                  strings.chooseGardenAtmosphere,
-
+                  strings.isArabic
+                      ? 'اختر أجواء الحديقة'
+                      : 'Choose your garden atmosphere',
                   style: TextStyle(
                     color: isDark
                         ? AppTheme.darkSecondaryText
@@ -841,26 +989,22 @@ class _GardenScreenState extends State<GardenScreen> {
 
                 _themeOption(
                   sheetContext,
-                  strings.classicGarden,
-                  strings.freshGreenGarden,
-                  Icons.yard_outlined,
-                  GardenTheme.classic,
+                  strings.isArabic ? 'حديقة الصباح' : 'Morning Garden',
+                  strings.isArabic
+                      ? 'أجواء مشرقة وهادئة'
+                      : 'Bright and peaceful atmosphere',
+                  Icons.wb_sunny_outlined,
+                  GardenTheme.morning,
                 ),
 
                 _themeOption(
                   sheetContext,
-                  strings.nightGarden,
-                  strings.calmGardenAtNight,
+                  strings.isArabic ? 'حديقة الليل' : 'Night Garden',
+                  strings.isArabic
+                      ? 'أجواء هادئة أثناء الليل'
+                      : 'Calm atmosphere at night',
                   Icons.nightlight_outlined,
                   GardenTheme.night,
-                ),
-
-                _themeOption(
-                  sheetContext,
-                  strings.desertGarden,
-                  strings.warmSandyLandscape,
-                  Icons.landscape_outlined,
-                  GardenTheme.desert,
                 ),
               ],
             ),
@@ -882,48 +1026,39 @@ class _GardenScreenState extends State<GardenScreen> {
     GardenTheme theme,
   ) {
     final selected = widget.gardenTheme == theme;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () async {
         Navigator.pop(context);
-
         await widget.onThemeChanged(theme);
       },
-
       child: Container(
         width: double.infinity,
-
         margin: const EdgeInsets.only(bottom: 12),
-
         padding: const EdgeInsets.all(15),
-
         decoration: BoxDecoration(
           color: selected
               ? AppTheme.secondaryColor.withValues(alpha: isDark ? .22 : .14)
               : isDark
               ? const Color(0xFF202A21)
               : Colors.white,
-
           borderRadius: BorderRadius.circular(18),
-
           border: Border.all(
             color: selected
                 ? AppTheme.primaryColor
                 : isDark
                 ? const Color(0xFF414A42)
                 : Colors.grey.shade300,
-
             width: selected ? 2 : 1,
           ),
         ),
-
         child: Row(
           children: [
             Container(
               width: 44,
               height: 44,
-
               decoration: BoxDecoration(
                 color: selected
                     ? AppTheme.secondaryColor.withValues(
@@ -932,10 +1067,8 @@ class _GardenScreenState extends State<GardenScreen> {
                     : isDark
                     ? const Color(0xFF293229)
                     : Colors.grey.shade100,
-
                 shape: BoxShape.circle,
               ),
-
               child: Icon(icon, color: AppTheme.primaryColor),
             ),
 
@@ -944,11 +1077,9 @@ class _GardenScreenState extends State<GardenScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-
                 children: [
                   Text(
                     title,
-
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
 
@@ -956,7 +1087,6 @@ class _GardenScreenState extends State<GardenScreen> {
 
                   Text(
                     subtitle,
-
                     style: TextStyle(
                       color: isDark
                           ? AppTheme.darkSecondaryText
@@ -970,7 +1100,6 @@ class _GardenScreenState extends State<GardenScreen> {
 
             Icon(
               selected ? Icons.check_circle : Icons.radio_button_unchecked,
-
               color: selected
                   ? AppTheme.primaryColor
                   : isDark
@@ -982,53 +1111,29 @@ class _GardenScreenState extends State<GardenScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // GARDEN TEXT COLOR
-  // ============================================================
-
-  Color get _gardenTextColor {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    switch (widget.gardenTheme) {
-      case GardenTheme.classic:
-        return isDark ? const Color(0xFFE8F0E7) : const Color(0xFF24442B);
-
-      case GardenTheme.night:
-        return isDark ? Color(0xFFE9F0FA) : const Color(0xFF111312);
-
-      case GardenTheme.desert:
-        return isDark ? const Color(0xFFFFE8C7) : const Color(0xFF57351F);
-    }
-  }
-  // ============================================================
-  // GARDEN BORDER COLOR
-  // ============================================================
-
-  Color get _gardenBorderColor {
-    switch (widget.gardenTheme) {
-      case GardenTheme.classic:
-        return const Color(0xFF7DAE68);
-
-      case GardenTheme.night:
-        return const Color(0xFF61779B);
-
-      case GardenTheme.desert:
-        return const Color(0xFFD1A66A);
-    }
-  }
 }
 
 // ============================================================================
-// PLANT POSITION
+// GARDEN LAYOUT
 // ============================================================================
 
-class _PlantPosition {
+class _GardenLayout {
+  final double aspectRatio;
+  final List<_PlantSpot> spots;
+
+  const _GardenLayout({required this.aspectRatio, required this.spots});
+}
+
+// ============================================================================
+// PLANT SPOT
+// ============================================================================
+
+class _PlantSpot {
   final double x;
   final double y;
-  final double scale;
+  final double plantSize;
 
-  const _PlantPosition(this.x, this.y, this.scale);
+  const _PlantSpot({required this.x, required this.y, required this.plantSize});
 }
 
 // ============================================================================
@@ -1037,134 +1142,95 @@ class _PlantPosition {
 
 class _GardenPlant extends StatelessWidget {
   final Habit habit;
-  final double scale;
+  final double plantSize;
   final bool selected;
   final VoidCallback onTap;
 
   const _GardenPlant({
     required this.habit,
-    required this.scale,
+    required this.plantSize,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final size = 70 * scale;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
-
       behavior: HitTestBehavior.opaque,
-
       child: AnimatedScale(
-        scale: selected ? 1.10 : 1.0,
-
+        scale: selected ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 180),
-
         child: SizedBox(
-          width: 112,
-          height: 118,
-
+          width: 130,
+          height: plantSize + 72,
           child: Stack(
-            alignment: Alignment.bottomCenter,
-
             clipBehavior: Clip.none,
-
+            alignment: Alignment.topCenter,
             children: [
+              // ==================================================
+              // POT / PLANT
+              // ==================================================
               Positioned(
-                bottom: 26,
-
-                child: Container(
-                  width: size * .88,
-                  height: 15,
-
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: .13),
-
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                ),
+                top: 0,
+                left: (130 - plantSize) / 2,
+                child: PlantWidget(habit: habit, size: plantSize),
               ),
 
+              // ==================================================
+              // NAME
+              // ==================================================
               Positioned(
-                bottom: 29,
-
-                child: PlantWidget(habit: habit, size: size),
-              ),
-
-              Positioned(
-                bottom: 0,
-
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 104),
-
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFF3E7C4A)
-                        : Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xDD202A21)
-                        : Colors.white.withValues(alpha: .90),
-
-                    borderRadius: BorderRadius.circular(12),
-
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFF3E7C4A)
-                          : Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF536455)
-                          : const Color(0xFFD9E3D5),
+                top: plantSize + 13,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
                     ),
-                  ),
-
-                  child: Text(
-                    habit.name,
-
-                    maxLines: 1,
-
-                    overflow: TextOverflow.ellipsis,
-
-                    textAlign: TextAlign.center,
-
-                    style: TextStyle(
+                    decoration: BoxDecoration(
                       color: selected
-                          ? Colors.white
-                          : Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFFE8F0E7)
-                          : const Color(0xFF24442B),
-
-                      fontSize: 10.5,
-
-                      fontWeight: FontWeight.w800,
+                          ? const Color(0xA83E7C4A)
+                          : Colors.black.withValues(alpha: .36),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      habit.name,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ),
 
+              // ==================================================
+              // COMPLETED
+              // ==================================================
               if (habit.isCompletedToday)
                 Positioned(
-                  top: 4,
-                  right: 10,
-
+                  top: -3,
+                  right: 8,
                   child: Container(
-                    width: 22,
-                    height: 22,
-
+                    width: 21,
+                    height: 21,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFFE8F0E7)
-                          : Colors.white,
+                      color: isDark ? const Color(0xFFE8F0E7) : Colors.white,
                       shape: BoxShape.circle,
                     ),
-
                     child: const Icon(
                       Icons.check_circle,
-                      size: 21,
+                      size: 20,
                       color: Color(0xFF3E7C4A),
                     ),
                   ),
@@ -1174,242 +1240,5 @@ class _GardenPlant extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ============================================================================
-// GARDEN PAINTER
-// ============================================================================
-
-class _GardenPainter extends CustomPainter {
-  final GardenTheme theme;
-
-  _GardenPainter(this.theme);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-
-    final background = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: _backgroundColors,
-      ).createShader(rect);
-
-    canvas.drawRect(rect, background);
-
-    // ==========================================================
-    // GROUND
-    // ==========================================================
-
-    final groundPaint = Paint()..color = _groundColor;
-
-    final groundPath = Path()
-      ..moveTo(0, size.height * .48)
-      ..quadraticBezierTo(
-        size.width * .22,
-        size.height * .40,
-        size.width * .47,
-        size.height * .50,
-      )
-      ..quadraticBezierTo(
-        size.width * .72,
-        size.height * .60,
-        size.width,
-        size.height * .46,
-      )
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    canvas.drawPath(groundPath, groundPaint);
-
-    // ==========================================================
-    // MAIN PATH
-    // ==========================================================
-
-    final pathPaint = Paint()
-      ..color = _pathColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 28
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(size.width * .02, size.height * .83)
-      ..quadraticBezierTo(
-        size.width * .28,
-        size.height * .68,
-        size.width * .48,
-        size.height * .82,
-      )
-      ..quadraticBezierTo(
-        size.width * .67,
-        size.height * .93,
-        size.width * .98,
-        size.height * .76,
-      );
-
-    canvas.drawPath(path, pathPaint);
-
-    final smallPathPaint = Paint()
-      ..color = _pathHighlight
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    canvas.drawPath(path, smallPathPaint);
-
-    // ==========================================================
-    // SHRUBS
-    // ==========================================================
-
-    final shrubPaint = Paint()..color = _shrubColor;
-
-    for (final p in [
-      Offset(size.width * .05, size.height * .57),
-      Offset(size.width * .15, size.height * .46),
-      Offset(size.width * .88, size.height * .51),
-      Offset(size.width * .95, size.height * .62),
-    ]) {
-      canvas.drawCircle(p, 13, shrubPaint);
-
-      canvas.drawCircle(p.translate(10, -5), 10, shrubPaint);
-
-      canvas.drawCircle(p.translate(-9, -4), 9, shrubPaint);
-    }
-
-    // ==========================================================
-    // STARS
-    // ==========================================================
-
-    if (theme == GardenTheme.night) {
-      final starPaint = Paint()..color = Colors.white.withValues(alpha: .60);
-
-      for (final p in [
-        Offset(size.width * .14, 78),
-        Offset(size.width * .28, 62),
-        Offset(size.width * .73, 72),
-        Offset(size.width * .87, 52),
-      ]) {
-        canvas.drawCircle(p, 2.2, starPaint);
-      }
-    }
-
-    // ==========================================================
-    // SOIL
-    // ==========================================================
-
-    final soilPaint = Paint()..color = _soilColor.withValues(alpha: .65);
-
-    for (int i = 0; i < 7; i++) {
-      final x = size.width * (.08 + i * .14);
-
-      final y = size.height * (.91 + (i.isEven ? .015 : -.005));
-
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(x, y), width: 36, height: 8),
-        soilPaint,
-      );
-    }
-  }
-
-  // ============================================================
-  // BACKGROUND COLORS
-  // ============================================================
-
-  List<Color> get _backgroundColors {
-    switch (theme) {
-      case GardenTheme.classic:
-        return const [Color(0xFFDDEFD6), Color(0xFFB7D79D)];
-
-      case GardenTheme.night:
-        return const [Color(0xFF21344A), Color(0xFF45604F)];
-
-      case GardenTheme.desert:
-        return const [Color(0xFFF1DFC1), Color(0xFFD8B47A)];
-    }
-  }
-
-  // ============================================================
-  // GROUND COLOR
-  // ============================================================
-
-  Color get _groundColor {
-    switch (theme) {
-      case GardenTheme.classic:
-        return const Color(0xFF9CC57A);
-
-      case GardenTheme.night:
-        return const Color(0xFF66836A);
-
-      case GardenTheme.desert:
-        return const Color(0xFFC9A06B);
-    }
-  }
-
-  // ============================================================
-  // PATH COLOR
-  // ============================================================
-
-  Color get _pathColor {
-    switch (theme) {
-      case GardenTheme.classic:
-        return const Color(0xFFC7A77C);
-
-      case GardenTheme.night:
-        return const Color(0xFF9B8C70);
-
-      case GardenTheme.desert:
-        return const Color(0xFFE2C99E);
-    }
-  }
-
-  // ============================================================
-  // PATH HIGHLIGHT
-  // ============================================================
-
-  Color get _pathHighlight => Colors.white.withValues(alpha: .20);
-
-  // ============================================================
-  // SHRUB COLOR
-  // ============================================================
-
-  Color get _shrubColor {
-    switch (theme) {
-      case GardenTheme.classic:
-        return const Color(0xFF5D9A54);
-
-      case GardenTheme.night:
-        return const Color(0xFF476C50);
-
-      case GardenTheme.desert:
-        return const Color(0xFF7E9B55);
-    }
-  }
-
-  // ============================================================
-  // SOIL COLOR
-  // ============================================================
-
-  Color get _soilColor {
-    switch (theme) {
-      case GardenTheme.classic:
-        return const Color(0xFF7E674D);
-
-      case GardenTheme.night:
-        return const Color(0xFF655747);
-
-      case GardenTheme.desert:
-        return const Color(0xFF9A734A);
-    }
-  }
-
-  // ============================================================
-  // REPAINT
-  // ============================================================
-
-  @override
-  bool shouldRepaint(covariant _GardenPainter oldDelegate) {
-    return oldDelegate.theme != theme;
   }
 }

@@ -11,12 +11,12 @@ class GardenThemeService {
     final savedTheme = preferences.getString(_themeKey);
 
     if (savedTheme == null) {
-      return GardenTheme.classic;
+      return GardenTheme.morning;
     }
 
     return GardenTheme.values.firstWhere(
       (theme) => theme.name == savedTheme,
-      orElse: () => GardenTheme.classic,
+      orElse: () => GardenTheme.morning,
     );
   }
 

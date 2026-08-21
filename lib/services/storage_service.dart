@@ -7,19 +7,33 @@ import '../models/habit.dart';
 class StorageService {
   static const String _habitsKey = 'habits';
 
+  // ============================================================
+  // LOAD HABITS
+  // ============================================================
+
   Future<List<Habit>> loadHabits() async {
     final preferences = await SharedPreferences.getInstance();
 
     final habitsJson = preferences.getString(_habitsKey);
 
-    if (habitsJson == null) {
+    if (habitsJson == null || habitsJson.isEmpty) {
       return [];
     }
 
-    final List<dynamic> decodedData = jsonDecode(habitsJson);
+    try {
+      final List<dynamic> decodedData = jsonDecode(habitsJson);
 
-    return decodedData.map((habit) => Habit.fromJson(habit)).toList();
+      return decodedData
+          .map((habit) => Habit.fromJson(Map<String, dynamic>.from(habit)))
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
+
+  // ============================================================
+  // SAVE HABITS
+  // ============================================================
 
   Future<void> saveHabits(List<Habit> habits) async {
     final preferences = await SharedPreferences.getInstance();
@@ -30,6 +44,10 @@ class StorageService {
 
     await preferences.setString(_habitsKey, habitsJson);
   }
+
+  // ============================================================
+  // CLEAR HABITS
+  // ============================================================
 
   Future<void> clearHabits() async {
     final preferences = await SharedPreferences.getInstance();

@@ -1,1 +1,1 @@
-enum GardenTheme { classic, night, desert }
+enum GardenTheme { morning, night }

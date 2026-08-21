@@ -29,11 +29,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   List<Habit> _habits = [];
 
-  GardenTheme _gardenTheme = GardenTheme.classic;
+  // ============================================================
+  // GARDEN THEME
+  // ============================================================
+
+  GardenTheme _gardenTheme = GardenTheme.morning;
 
   int _currentIndex = 0;
 
   bool _isLoading = true;
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
@@ -178,6 +186,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
+
               child: Text(strings.cancel),
             ),
 
@@ -185,8 +194,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
+
               child: Text(
                 strings.delete,
+
                 style: const TextStyle(color: Colors.red),
               ),
             ),
@@ -254,10 +265,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // ========================================================
       GardenScreen(
         habits: _habits,
+
         gardenTheme: _gardenTheme,
+
         onThemeChanged: _changeGardenTheme,
+
         onToggleHabit: _toggleHabit,
+
         onEditHabit: _openEditHabit,
+
         onDeleteHabit: _deleteHabit,
       ),
 
@@ -303,31 +319,41 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),
+
             selectedIcon: const Icon(Icons.home),
+
             label: strings.home,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.checklist_outlined),
+
             selectedIcon: const Icon(Icons.checklist),
+
             label: strings.habits,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.local_florist_outlined),
+
             selectedIcon: const Icon(Icons.local_florist),
+
             label: strings.garden,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.bar_chart_outlined),
+
             selectedIcon: const Icon(Icons.bar_chart),
+
             label: strings.progress,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.person_outline),
+
             selectedIcon: const Icon(Icons.person),
+
             label: strings.profile,
           ),
         ],

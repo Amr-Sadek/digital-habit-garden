@@ -16,7 +16,9 @@ class NotificationSettingsScreen extends StatefulWidget {
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   static const String _enabledKey = 'daily_reminder_enabled';
+
   static const String _hourKey = 'daily_reminder_hour';
+
   static const String _minuteKey = 'daily_reminder_minute';
 
   bool _enabled = false;
@@ -26,6 +28,10 @@ class _NotificationSettingsScreenState
   bool _loading = true;
 
   bool _changingNotification = false;
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
@@ -39,23 +45,39 @@ class _NotificationSettingsScreenState
   // ============================================================
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    final enabled = prefs.getBool(_enabledKey) ?? false;
+      final enabled = prefs.getBool(_enabledKey) ?? false;
 
-    final hour = prefs.getInt(_hourKey) ?? 20;
+      final hour = prefs.getInt(_hourKey) ?? 20;
 
-    final minute = prefs.getInt(_minuteKey) ?? 0;
+      final minute = prefs.getInt(_minuteKey) ?? 0;
 
-    if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-    setState(() {
-      _enabled = enabled;
+      setState(() {
+        _enabled = enabled;
 
-      _reminderTime = TimeOfDay(hour: hour, minute: minute);
+        _reminderTime = TimeOfDay(hour: hour, minute: minute);
 
-      _loading = false;
-    });
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load notification settings: $e')),
+      );
+    }
   }
 
   // ============================================================
@@ -81,39 +103,62 @@ class _NotificationSettingsScreenState
       return;
     }
 
-    // ============================================================
+    // ==========================================================
     // TURN OFF
-    // ============================================================
+    // ==========================================================
 
     if (!value) {
       setState(() {
+        _changingNotification = true;
         _enabled = false;
       });
 
-      await NotificationService.instance.cancelDailyReminder();
+      try {
+        await NotificationService.instance.cancelDailyReminder();
 
-      await _saveSettings();
+        await _saveSettings();
+      } catch (e) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _enabled = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not disable notifications: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _changingNotification = false;
+          });
+        }
+      }
 
       return;
     }
 
-    // ============================================================
+    // ==========================================================
     // TURN ON
-    // ============================================================
+    // ==========================================================
 
     setState(() {
       _changingNotification = true;
     });
 
     try {
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
       // Request notification permission
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
 
       final permissionGranted = await NotificationService.instance
           .requestNotificationPermission();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (!permissionGranted) {
         setState(() {
@@ -129,12 +174,9 @@ class _NotificationSettingsScreenState
         return;
       }
 
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
       // Permission granted
-      //
-      // Turn the switch ON immediately.
-      // Do NOT depend on scheduling success.
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
 
       setState(() {
         _enabled = true;
@@ -142,9 +184,9 @@ class _NotificationSettingsScreenState
 
       await _saveSettings();
 
-      // ----------------------------------------------------------
-      // Try to schedule the reminder
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
+      // Schedule reminder
+      // --------------------------------------------------------
 
       try {
         await NotificationService.instance.scheduleDailyReminder(
@@ -152,10 +194,22 @@ class _NotificationSettingsScreenState
           minute: _reminderTime.minute,
         );
       } catch (e) {
-        // The permission is already granted and the switch
-        // should remain ON even if scheduling has another issue.
         debugPrint('Failed to schedule daily reminder: $e');
       }
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _enabled = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not enable notifications: $e')),
+      );
+
+      await _saveSettings();
     } finally {
       if (mounted) {
         setState(() {
@@ -163,11 +217,17 @@ class _NotificationSettingsScreenState
         });
       }
     }
-  } // ============================================================
+  }
+
+  // ============================================================
   // PICK TIME
   // ============================================================
 
   Future<void> _pickTime() async {
+    if (_changingNotification) {
+      return;
+    }
+
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: _reminderTime,
@@ -178,25 +238,36 @@ class _NotificationSettingsScreenState
       return;
     }
 
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _reminderTime = selectedTime;
     });
 
-    await _saveSettings();
-
-    if (!_enabled) {
-      return;
-    }
-
     try {
+      await _saveSettings();
+
+      if (!_enabled) {
+        return;
+      }
+
       await NotificationService.instance.scheduleDailyReminder(
         hour: selectedTime.hour,
         minute: selectedTime.minute,
       );
     } catch (e) {
-      debugPrint('Failed to reschedule daily reminder: $e');
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update reminder time: $e')),
+      );
     }
   }
+
   // ============================================================
   // FORMAT TIME
   // ============================================================
@@ -232,6 +303,7 @@ class _NotificationSettingsScreenState
 
             decoration: BoxDecoration(
               color: AppTheme.primaryColor,
+
               borderRadius: BorderRadius.circular(24),
             ),
 
@@ -249,6 +321,7 @@ class _NotificationSettingsScreenState
 
                 Text(
                   strings.stayOnTrack,
+
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -260,6 +333,7 @@ class _NotificationSettingsScreenState
 
                 Text(
                   strings.notificationDescription,
+
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -284,6 +358,7 @@ class _NotificationSettingsScreenState
 
                 title: Text(
                   strings.dailyReminder,
+
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -328,6 +403,7 @@ class _NotificationSettingsScreenState
 
               title: Text(
                 strings.reminderTime,
+
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
 
@@ -365,6 +441,7 @@ class _NotificationSettingsScreenState
               children: [
                 Icon(
                   Icons.info_outline,
+
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.grey.shade400
                       : Colors.grey.shade600,
@@ -375,6 +452,7 @@ class _NotificationSettingsScreenState
                 Expanded(
                   child: Text(
                     strings.localNotificationsInfo,
+
                     style: TextStyle(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.grey.shade400

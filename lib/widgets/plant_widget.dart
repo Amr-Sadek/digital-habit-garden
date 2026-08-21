@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/habit.dart';
-import '../theme/app_theme.dart';
 
 class PlantWidget extends StatelessWidget {
   final Habit habit;
@@ -11,19 +10,16 @@ class PlantWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size + 20,
       height: size + 20,
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryColor.withValues(alpha: 0.15),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Image.asset(
-        habit.plantImagePath,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
+      child: Center(
+        child: Image.asset(
+          habit.plantImagePath,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

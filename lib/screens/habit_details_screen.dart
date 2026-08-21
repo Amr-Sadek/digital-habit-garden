@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
 import '../models/habit.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 
 class HabitDetailsScreen extends StatefulWidget {
   final Habit habit;
+
   final Future<void> Function(Habit habit) onToggleHabit;
   final Future<void> Function(Habit habit) onEditHabit;
   final Future<void> Function(Habit habit) onDeleteHabit;
@@ -24,7 +26,13 @@ class HabitDetailsScreen extends StatefulWidget {
 
 class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
   late bool _completedToday;
+
   bool _isToggling = false;
+  bool _isChangingReminder = false;
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
@@ -33,12 +41,289 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
     _completedToday = widget.habit.isCompletedToday;
   }
 
+  // ============================================================
+  // UPDATE
+  // ============================================================
+
   @override
   void didUpdateWidget(covariant HabitDetailsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     _completedToday = widget.habit.isCompletedToday;
   }
+
+  // ============================================================
+  // CHANGE REMINDER TIME
+  // ============================================================
+
+  Future<void> _changeReminderTime() async {
+    if (_isChangingReminder) {
+      return;
+    }
+
+    final currentTime =
+        widget.habit.reminderHour != null && widget.habit.reminderMinute != null
+        ? TimeOfDay(
+            hour: widget.habit.reminderHour!,
+            minute: widget.habit.reminderMinute!,
+          )
+        : TimeOfDay.now();
+
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: currentTime,
+    );
+
+    if (selectedTime == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isChangingReminder = true;
+    });
+
+    try {
+      final success = await NotificationService.instance.scheduleHabitReminder(
+        habitId: widget.habit.id,
+        habitName: widget.habit.name,
+        hour: selectedTime.hour,
+        minute: selectedTime.minute,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!success) {
+        final strings = AppStringsScope.of(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              strings.isArabic
+                  ? 'تعذر جدولة التذكير.'
+                  : 'Could not schedule reminder.',
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      widget.habit.reminderEnabled = true;
+      widget.habit.reminderHour = selectedTime.hour;
+      widget.habit.reminderMinute = selectedTime.minute;
+
+      setState(() {});
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      final strings = AppStringsScope.of(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            strings.isArabic
+                ? 'تعذر جدولة التذكير: ${e.toString()}'
+                : 'Could not schedule reminder: ${e.toString()}',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isChangingReminder = false;
+        });
+      }
+    }
+  }
+
+  // ============================================================
+  // TOGGLE REMINDER
+  // ============================================================
+
+  Future<void> _toggleReminder(bool enabled) async {
+    if (_isChangingReminder) {
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // TURN OFF
+    // ----------------------------------------------------------
+
+    if (!enabled) {
+      setState(() {
+        _isChangingReminder = true;
+      });
+
+      try {
+        await NotificationService.instance.cancelHabitReminder(widget.habit.id);
+
+        widget.habit.reminderEnabled = false;
+        widget.habit.reminderHour = null;
+        widget.habit.reminderMinute = null;
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {});
+      } catch (e) {
+        if (!mounted) {
+          return;
+        }
+
+        final strings = AppStringsScope.of(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              strings.isArabic
+                  ? 'تعذر إيقاف التذكير: ${e.toString()}'
+                  : 'Could not disable reminder: ${e.toString()}',
+            ),
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isChangingReminder = false;
+          });
+        }
+      }
+
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // TURN ON
+    // ----------------------------------------------------------
+
+    await _changeReminderTime();
+  }
+
+  // ============================================================
+  // REMINDER CARD
+  // ============================================================
+
+  Widget _buildReminderCard() {
+    final strings = AppStringsScope.of(context);
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final habit = widget.habit;
+
+    // Check whether a reminder time exists.
+    final hasTime = habit.reminderHour != null && habit.reminderMinute != null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.primaryColor.withValues(alpha: isDark ? .25 : .15),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+
+              const SizedBox(width: 13),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.isArabic ? 'تذكير يومي' : 'Daily Reminder',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      habit.reminderEnabled && hasTime
+                          ? strings.isArabic
+                                ? 'كل يوم الساعة ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}'
+                                : 'Every day at ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}'
+                          : strings.isArabic
+                          ? 'لم يتم ضبط تذكير'
+                          : 'No reminder set',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppTheme.darkSecondaryText
+                            : Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Switch(
+                value: habit.reminderEnabled,
+                activeTrackColor: AppTheme.primaryColor.withValues(alpha: .45),
+                onChanged: _isChangingReminder ? null : _toggleReminder,
+              ),
+            ],
+          ),
+
+          if (habit.reminderEnabled && hasTime) ...[
+            const SizedBox(height: 14),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isChangingReminder ? null : _changeReminderTime,
+                icon: const Icon(Icons.access_time),
+                label: Text(
+                  strings.isArabic
+                      ? 'تغيير الوقت: ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}'
+                      : 'Change time: ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}',
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // FORMAT TIME
+  // ============================================================
+
+  String _formatTime(BuildContext context, int hour, int minute) {
+    return TimeOfDay(hour: hour, minute: minute).format(context);
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -54,20 +339,16 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
         ? AppTheme.darkSecondaryText
         : Colors.grey.shade600;
 
-    final calendarEmptyColor = isDark
-        ? const Color(0xFF293229)
-        : Colors.grey.shade100;
-
-    final calendarEmptyBorderColor = isDark
-        ? const Color(0xFF414A42)
-        : Colors.grey.shade300;
-
     final completedDays = habit.completedDates.length;
+
     final currentStreak = habit.currentStreak;
+
     final bestStreak = _calculateBestStreak();
+
     final completedToday = _completedToday;
 
     final growthProgress = habit.plantGrowthProgress;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -78,69 +359,42 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            // =====================================================
+            // ==================================================
             // HABIT HEADER
-            // =====================================================
+            // ==================================================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-
                   colors: [
-                    AppTheme.primaryColor.withValues(
-                      alpha: isDark ? 0.22 : 0.12,
-                    ),
+                    AppTheme.primaryColor.withValues(alpha: isDark ? .22 : .12),
                     AppTheme.secondaryColor.withValues(
-                      alpha: isDark ? 0.16 : 0.10,
+                      alpha: isDark ? .16 : .10,
                     ),
                   ],
                 ),
-
                 borderRadius: BorderRadius.circular(28),
-
                 border: Border.all(
                   color: AppTheme.primaryColor.withValues(
-                    alpha: isDark ? 0.22 : 0.12,
+                    alpha: isDark ? .22 : .12,
                   ),
                 ),
               ),
-
               child: Column(
                 children: [
-                  // =================================================
-                  // PLANT
-                  // =================================================
                   Container(
                     width: 120,
                     height: 120,
-
                     decoration: BoxDecoration(
-                      // Keep the plant background light so the emoji
-                      // remains clearly visible in both themes.
                       color: isDark ? const Color(0xFFE8F0E7) : Colors.white,
-
                       shape: BoxShape.circle,
-
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withValues(
-                            alpha: isDark ? 0.18 : 0.12,
-                          ),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
                     ),
-
                     child: Center(
                       child: Image.asset(
                         habit.plantImagePath,
@@ -156,7 +410,6 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                   Text(
                     habit.name,
                     textAlign: TextAlign.center,
-
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
@@ -169,7 +422,6 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     Text(
                       habit.description,
                       textAlign: TextAlign.center,
-
                       style: TextStyle(
                         color: secondaryTextColor,
                         fontSize: 14,
@@ -180,26 +432,19 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
                   const SizedBox(height: 16),
 
-                  // =================================================
-                  // STAGE
-                  // =================================================
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 15,
                       vertical: 8,
                     ),
-
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withValues(
-                        alpha: isDark ? 0.18 : 0.10,
+                        alpha: isDark ? .18 : .10,
                       ),
-
                       borderRadius: BorderRadius.circular(20),
                     ),
-
                     child: Text(
-                      _stageName(habit.plantStage),
-
+                      _stageName(habit.plantStage, strings.isArabic),
                       style: const TextStyle(
                         color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w700,
@@ -210,18 +455,13 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
                   const SizedBox(height: 20),
 
-                  // =================================================
-                  // GROWTH PROGRESS
-                  // =================================================
                   Align(
                     alignment: Alignment.centerLeft,
-
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
                             strings.plantGrowth,
-
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
@@ -231,7 +471,6 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
                         Text(
                           '${(growthProgress * 100).round()}%',
-
                           style: const TextStyle(
                             color: AppTheme.primaryColor,
                             fontWeight: FontWeight.w800,
@@ -246,15 +485,12 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-
                     child: LinearProgressIndicator(
                       value: growthProgress,
                       minHeight: 8,
-
                       backgroundColor: isDark
                           ? const Color(0xFF303A31)
                           : Colors.white,
-
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         AppTheme.primaryColor,
                       ),
@@ -266,9 +502,23 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
             const SizedBox(height: 26),
 
-            // =====================================================
+            // ==================================================
+            // REMINDER
+            // ==================================================
+            Text(
+              strings.isArabic ? 'التذكير' : 'Reminder',
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildReminderCard(),
+
+            const SizedBox(height: 28),
+
+            // ==================================================
             // STATISTICS
-            // =====================================================
+            // ==================================================
             Row(
               children: [
                 Expanded(
@@ -303,12 +553,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
             const SizedBox(height: 28),
 
-            // =====================================================
+            // ==================================================
             // TODAY
-            // =====================================================
+            // ==================================================
             Text(
               strings.today,
-
               style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
             ),
 
@@ -316,58 +565,39 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
             Container(
               padding: const EdgeInsets.all(18),
-
               decoration: BoxDecoration(
                 color: cardColor,
-
                 borderRadius: BorderRadius.circular(22),
-
                 border: Border.all(
                   color: completedToday
                       ? AppTheme.primaryColor.withValues(
-                          alpha: isDark ? 0.35 : 0.25,
+                          alpha: isDark ? .35 : .25,
                         )
-                      : Colors.grey.withValues(alpha: isDark ? 0.20 : 0.13),
+                      : Colors.grey.withValues(alpha: isDark ? .20 : .13),
                 ),
-
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: isDark ? 0.15 : 0.035,
-                    ),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
               ),
-
               child: Row(
                 children: [
                   Container(
                     width: 50,
                     height: 50,
-
                     decoration: BoxDecoration(
                       color: completedToday
                           ? AppTheme.primaryColor.withValues(
-                              alpha: isDark ? 0.20 : 0.12,
+                              alpha: isDark ? .20 : .12,
                             )
-                          : Colors.grey.withValues(alpha: isDark ? 0.16 : 0.10),
-
+                          : Colors.grey.withValues(alpha: isDark ? .16 : .10),
                       borderRadius: BorderRadius.circular(15),
                     ),
-
                     child: Icon(
                       completedToday
                           ? Icons.check_circle
                           : Icons.circle_outlined,
-
                       color: completedToday
                           ? AppTheme.primaryColor
                           : isDark
                           ? const Color(0xFF9BA69B)
                           : Colors.grey.shade500,
-
                       size: 27,
                     ),
                   ),
@@ -377,13 +607,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-
                       children: [
                         Text(
                           completedToday
                               ? strings.completedToday
                               : strings.notCompletedYet,
-
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
@@ -396,7 +624,6 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                           completedToday
                               ? strings.streakSafe
                               : strings.completeToKeepGrowing,
-
                           style: TextStyle(
                             color: secondaryTextColor,
                             fontSize: 12,
@@ -408,16 +635,15 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
                   Switch(
                     value: completedToday,
-
                     activeTrackColor: AppTheme.primaryColor.withValues(
-                      alpha: 0.45,
+                      alpha: .45,
                     ),
-
                     onChanged: _isToggling
                         ? null
                         : (_) async {
                             setState(() {
                               _completedToday = !_completedToday;
+
                               _isToggling = true;
                             });
 
@@ -428,6 +654,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                                 setState(() {
                                   _completedToday =
                                       widget.habit.isCompletedToday;
+
                                   _isToggling = false;
                                 });
                               }
@@ -440,12 +667,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
             const SizedBox(height: 28),
 
-            // =====================================================
+            // ==================================================
             // ACTIVITY HISTORY
-            // =====================================================
+            // ==================================================
             Text(
               strings.activityHistory,
-
               style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
             ),
 
@@ -455,12 +681,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
             const SizedBox(height: 28),
 
-            // =====================================================
-            // ACTIONS
-            // =====================================================
+            // ==================================================
+            // EDIT
+            // ==================================================
             SizedBox(
               width: double.infinity,
-
               child: ElevatedButton.icon(
                 onPressed: () async {
                   await widget.onEditHabit(widget.habit);
@@ -469,18 +694,13 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     Navigator.pop(context);
                   }
                 },
-
                 icon: const Icon(Icons.edit_outlined),
-
                 label: Text(
                   strings.editHabit,
-
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -490,36 +710,37 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
             const SizedBox(height: 10),
 
+            // ==================================================
+            // DELETE
+            // ==================================================
             SizedBox(
               width: double.infinity,
-
               child: OutlinedButton.icon(
                 onPressed: () async {
+                  // Cancel reminder before deleting habit.
+                  await NotificationService.instance.cancelHabitReminder(
+                    widget.habit.id,
+                  );
+
                   await widget.onDeleteHabit(widget.habit);
 
                   if (context.mounted) {
                     Navigator.pop(context);
                   }
                 },
-
                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-
                 label: Text(
                   strings.delete,
-
                   style: const TextStyle(
                     color: Colors.redAccent,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-
                   side: BorderSide(
-                    color: Colors.redAccent.withValues(alpha: 0.35),
+                    color: Colors.redAccent.withValues(alpha: .35),
                   ),
-
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -532,11 +753,42 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
     );
   }
 
-  // =============================================================
-  // PLANT STAGE
-  // =============================================================
+  // ============================================================
+  // STAGE NAME
+  // ============================================================
 
-  String _stageName(String stage) {
+  String _stageName(String stage, bool isArabic) {
+    if (isArabic) {
+      switch (stage) {
+        case 'seed':
+          return 'بذرة';
+
+        case 'sprout':
+          return 'برعم';
+
+        case 'young_plant':
+          return 'نبتة صغيرة';
+
+        case 'growing':
+          return 'نامية';
+
+        case 'strong_plant':
+          return 'نبتة قوية';
+
+        case 'mature':
+          return 'ناضجة';
+
+        case 'blooming':
+          return 'مزدهرة';
+
+        case 'fully_grown':
+          return 'مكتملة النمو';
+
+        default:
+          return 'بذرة';
+      }
+    }
+
     switch (stage) {
       case 'seed':
         return 'Seed';
@@ -565,9 +817,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
       default:
         return 'Seed';
     }
-  } // =============================================================
+  }
+
+  // ============================================================
   // BEST STREAK
-  // =============================================================
+  // ============================================================
 
   int _calculateBestStreak() {
     if (widget.habit.completedDates.isEmpty) {
@@ -611,9 +865,9 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
   }
 }
 
-// ==================================================================
+// ============================================================================
 // STAT CARD
-// ==================================================================
+// ============================================================================
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
@@ -638,25 +892,13 @@ class _StatCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 17, horizontal: 7),
-
       decoration: BoxDecoration(
         color: cardColor,
-
         borderRadius: BorderRadius.circular(18),
-
         border: Border.all(
-          color: Colors.grey.withValues(alpha: isDark ? 0.20 : 0.12),
+          color: Colors.grey.withValues(alpha: isDark ? .20 : .12),
         ),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.025),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-
       child: Column(
         children: [
           Icon(icon, color: AppTheme.primaryColor, size: 23),
@@ -665,7 +907,6 @@ class _StatCard extends StatelessWidget {
 
           Text(
             value,
-
             style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
           ),
 
@@ -674,7 +915,6 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-
             style: TextStyle(
               color: secondaryTextColor,
               fontSize: 10,
@@ -687,9 +927,9 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ============================================================================
 // HISTORY CALENDAR
-// ==================================================================
+// ============================================================================
 
 class _HistoryCalendar extends StatefulWidget {
   final List<String> completedDates;
@@ -716,6 +956,8 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
   Widget build(BuildContext context) {
     final strings = AppStringsScope.of(context);
 
+    final isArabic = strings.isArabic;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final cardColor = Theme.of(context).cardColor;
@@ -740,10 +982,12 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
 
     final cells = <Widget>[];
 
+    // Empty cells before first day.
     for (int i = 0; i < firstWeekday; i++) {
       cells.add(const SizedBox());
     }
 
+    // Days.
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(_month.year, _month.month, day);
 
@@ -761,32 +1005,25 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
       cells.add(
         Container(
           margin: const EdgeInsets.all(3),
-
           decoration: BoxDecoration(
             color: completed ? AppTheme.primaryColor : calendarEmptyColor,
-
             shape: BoxShape.circle,
-
             border: isToday
                 ? Border.all(color: AppTheme.primaryColor, width: 2)
                 : completed
                 ? null
                 : Border.all(color: calendarEmptyBorderColor),
           ),
-
           child: Center(
             child: Text(
               '$day',
-
               style: TextStyle(
                 color: completed
                     ? Colors.white
                     : isDark
                     ? AppTheme.darkText
                     : Colors.grey.shade700,
-
                 fontSize: 12,
-
                 fontWeight: completed || isToday
                     ? FontWeight.w800
                     : FontWeight.normal,
@@ -797,29 +1034,25 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
       );
     }
 
+    // Weekday names.
+    final weekdayNames = isArabic
+        ? const ['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح']
+        : const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
     return Container(
       padding: const EdgeInsets.all(16),
-
       decoration: BoxDecoration(
         color: cardColor,
-
         borderRadius: BorderRadius.circular(22),
-
         border: Border.all(
-          color: Colors.grey.withValues(alpha: isDark ? 0.20 : 0.12),
+          color: Colors.grey.withValues(alpha: isDark ? .20 : .12),
         ),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.025),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
-
       child: Column(
         children: [
+          // ------------------------------------------------------
+          // MONTH NAVIGATION
+          // ------------------------------------------------------
           Row(
             children: [
               IconButton(
@@ -828,16 +1061,13 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
                     _month = DateTime(_month.year, _month.month - 1);
                   });
                 },
-
                 icon: const Icon(Icons.chevron_left),
               ),
 
               Expanded(
                 child: Text(
                   '${strings.monthName(_month.month)} ${_month.year}',
-
                   textAlign: TextAlign.center,
-
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -851,7 +1081,6 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
                     _month = DateTime(_month.year, _month.month + 1);
                   });
                 },
-
                 icon: const Icon(Icons.chevron_right),
               ),
             ],
@@ -859,14 +1088,16 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
 
           const SizedBox(height: 8),
 
+          // ------------------------------------------------------
+          // WEEKDAYS
+          // ------------------------------------------------------
           Row(
             children: [
-              for (final day in ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+              for (final day in weekdayNames)
                 Expanded(
                   child: Center(
                     child: Text(
                       day,
-
                       style: TextStyle(
                         color: secondaryTextColor,
                         fontWeight: FontWeight.w700,
@@ -880,6 +1111,9 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
 
           const SizedBox(height: 8),
 
+          // ------------------------------------------------------
+          // CALENDAR
+          // ------------------------------------------------------
           GridView.count(
             crossAxisCount: 7,
             shrinkWrap: true,
@@ -889,14 +1123,15 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
 
           const SizedBox(height: 14),
 
+          // ------------------------------------------------------
+          // LEGEND
+          // ------------------------------------------------------
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-
             children: [
               Container(
                 width: 11,
                 height: 11,
-
                 decoration: const BoxDecoration(
                   color: AppTheme.primaryColor,
                   shape: BoxShape.circle,
@@ -912,11 +1147,9 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
               Container(
                 width: 11,
                 height: 11,
-
                 decoration: BoxDecoration(
                   color: calendarEmptyColor,
                   shape: BoxShape.circle,
-
                   border: Border.all(color: calendarEmptyBorderColor),
                 ),
               ),
@@ -930,6 +1163,10 @@ class _HistoryCalendarState extends State<_HistoryCalendar> {
       ),
     );
   }
+
+  // ============================================================
+  // FORMAT DATE
+  // ============================================================
 
   String _formatDate(DateTime date) {
     return '${date.year}-'

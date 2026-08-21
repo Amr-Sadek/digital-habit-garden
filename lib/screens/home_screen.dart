@@ -250,7 +250,7 @@ class HomeScreen extends StatelessWidget {
 
                     children: [
                       Text(
-                        'Today\'s Habits',
+                        strings.todaysHabits,
                         style: const TextStyle(
                           fontSize: 21,
                           fontWeight: FontWeight.w800,
@@ -528,7 +528,7 @@ class _HabitCard extends StatelessWidget {
                           ),
 
                           child: Text(
-                            completed ? 'Completed' : 'Today',
+                            completed ? strings.completed : strings.today,
 
                             style: TextStyle(
                               fontSize: 10,

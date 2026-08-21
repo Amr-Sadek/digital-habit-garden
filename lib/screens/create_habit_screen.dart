@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
-
 import '../models/habit.dart';
+import '../services/notification_service.dart';
 import '../services/plant_service.dart';
 import '../theme/app_theme.dart';
 
@@ -30,6 +30,10 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
   String _selectedPlant = 'flower';
 
+  bool _reminderEnabled = false;
+
+  TimeOfDay? _reminderTime;
+
   final List<Map<String, dynamic>> _plants = [
     {
       'type': 'flower',
@@ -52,23 +56,47 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     },
   ];
 
+  // ============================================================
+  // INIT
+  // ============================================================
+
   @override
   void initState() {
     super.initState();
 
     if (widget.habit != null) {
-      _nameController.text = widget.habit!.name;
-      _descriptionController.text = widget.habit!.description;
+      final habit = widget.habit!;
 
-      final selectedPlant = widget.habit!.plantType;
+      _nameController.text = habit.name;
+
+      _descriptionController.text = habit.description;
+
+      final selectedPlant = habit.plantType;
 
       if (PlantService.isPlantUnlocked(selectedPlant, widget.existingHabits)) {
         _selectedPlant = selectedPlant;
       } else {
         _selectedPlant = 'flower';
       }
+
+      // --------------------------------------------------------
+      // REMINDER
+      // --------------------------------------------------------
+
+      _reminderEnabled = habit.reminderEnabled;
+
+      if (habit.reminderHour != null && habit.reminderMinute != null) {
+        _reminderTime = TimeOfDay(
+          hour: habit.reminderHour!,
+          minute: habit.reminderMinute!,
+        );
+      }
     }
   }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
 
   @override
   void dispose() {
@@ -77,40 +105,144 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     super.dispose();
   }
 
-  void _saveHabit() {
+  // ============================================================
+  // PICK REMINDER TIME
+  // ============================================================
+
+  Future<void> _pickReminderTime() async {
+    final initialTime = _reminderTime ?? TimeOfDay.now();
+
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (selectedTime == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _reminderTime = selectedTime;
+      _reminderEnabled = true;
+    });
+  }
+
+  // ============================================================
+  // SAVE HABIT
+  // ============================================================
+
+  Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    // ----------------------------------------------------------
+    // Editing existing habit
+    // ----------------------------------------------------------
+
     if (widget.habit != null) {
-      widget.habit!.name = _nameController.text.trim();
+      final habit = widget.habit!;
 
-      widget.habit!.description = _descriptionController.text.trim();
+      habit.name = _nameController.text.trim();
 
-      widget.habit!.plantType = _selectedPlant;
+      habit.description = _descriptionController.text.trim();
 
-      Navigator.pop(context, widget.habit);
+      habit.plantType = _selectedPlant;
+
+      habit.reminderEnabled = _reminderEnabled;
+
+      if (_reminderEnabled && _reminderTime != null) {
+        habit.reminderHour = _reminderTime!.hour;
+        habit.reminderMinute = _reminderTime!.minute;
+
+        await NotificationService.instance.scheduleHabitReminder(
+          habitId: habit.id,
+          habitName: habit.name,
+          hour: _reminderTime!.hour,
+          minute: _reminderTime!.minute,
+        );
+      } else {
+        habit.reminderHour = null;
+        habit.reminderMinute = null;
+
+        await NotificationService.instance.cancelHabitReminder(habit.id);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context, habit);
+
       return;
     }
 
+    // ----------------------------------------------------------
+    // Create new habit
+    // ----------------------------------------------------------
+
     final habit = Habit(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+
       name: _nameController.text.trim(),
+
       description: _descriptionController.text.trim(),
+
       plantType: _selectedPlant,
+
       createdAt: DateTime.now(),
+
+      reminderEnabled: _reminderEnabled,
+
+      reminderHour: _reminderEnabled && _reminderTime != null
+          ? _reminderTime!.hour
+          : null,
+
+      reminderMinute: _reminderEnabled && _reminderTime != null
+          ? _reminderTime!.minute
+          : null,
     );
+
+    // ----------------------------------------------------------
+    // Schedule notification
+    // ----------------------------------------------------------
+
+    if (habit.reminderEnabled &&
+        habit.reminderHour != null &&
+        habit.reminderMinute != null) {
+      await NotificationService.instance.scheduleHabitReminder(
+        habitId: habit.id,
+        habitName: habit.name,
+        hour: habit.reminderHour!,
+        minute: habit.reminderMinute!,
+      );
+    }
+
+    if (!mounted) {
+      return;
+    }
 
     Navigator.pop(context, habit);
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStringsScope.of(context);
+
     final isEditing = widget.isEditing;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.isEditing ? strings.editHabit : strings.createHabit)),
+      appBar: AppBar(
+        title: Text(isEditing ? strings.editHabit : strings.createHabit),
+      ),
 
       body: Form(
         key: _formKey,
@@ -122,6 +254,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
+              // ==================================================
+              // TITLE
+              // ==================================================
               Text(
                 isEditing ? strings.updateYourHabit : strings.createNewHabit,
 
@@ -134,18 +269,23 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
               const SizedBox(height: 8),
 
               Text(
-                isEditing
-                    ? strings.keepDetailsUpdated
-                    : strings.buildHabit,
+                isEditing ? strings.keepDetailsUpdated : strings.buildHabit,
 
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
               ),
 
               const SizedBox(height: 30),
 
+              // ==================================================
+              // HABIT NAME
+              // ==================================================
               Text(
                 strings.habitName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
 
               const SizedBox(height: 8),
@@ -174,9 +314,16 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
               const SizedBox(height: 22),
 
+              // ==================================================
+              // DESCRIPTION
+              // ==================================================
               Text(
                 strings.description,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
 
               const SizedBox(height: 8),
@@ -191,7 +338,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
                   prefixIcon: const Padding(
                     padding: EdgeInsets.only(bottom: 45),
-
                     child: Icon(Icons.notes_outlined),
                   ),
 
@@ -203,20 +349,168 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
               const SizedBox(height: 22),
 
+              // ==================================================
+              // REMINDER
+              // ==================================================
+              Text(
+                strings.reminder,
+
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+
+                padding: const EdgeInsets.all(16),
+
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+
+                  borderRadius: BorderRadius.circular(18),
+
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withValues(alpha: .12),
+
+                            shape: BoxShape.circle,
+                          ),
+
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                            children: [
+                              Text(
+                                strings.habitReminder,
+
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+
+                              const SizedBox(height: 3),
+
+                              Text(
+                                _reminderEnabled && _reminderTime != null
+                                    ? strings.reminderAt(
+                                        _reminderTime!.format(context),
+                                      )
+                                    : strings.noReminderSet,
+
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Switch(
+                          value: _reminderEnabled,
+
+                          activeTrackColor: AppTheme.primaryColor.withValues(
+                            alpha: .45,
+                          ),
+
+                          onChanged: (value) async {
+                            if (!value) {
+                              setState(() {
+                                _reminderEnabled = false;
+                                _reminderTime = null;
+                              });
+
+                              return;
+                            }
+
+                            if (_reminderTime == null) {
+                              await _pickReminderTime();
+                              return;
+                            }
+
+                            setState(() {
+                              _reminderEnabled = true;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+
+                    if (_reminderEnabled) ...[
+                      const SizedBox(height: 12),
+
+                      SizedBox(
+                        width: double.infinity,
+
+                        child: OutlinedButton.icon(
+                          onPressed: _pickReminderTime,
+
+                          icon: const Icon(Icons.access_time),
+
+                          label: Text(
+                            _reminderTime == null
+                                ? strings.chooseReminderTime
+                                : strings.changeReminderTime(
+                                    _reminderTime!.format(context),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // ==================================================
+              // CHOOSE PLANT
+              // ==================================================
               Text(
                 strings.chooseYourPlant,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
 
               const SizedBox(height: 6),
 
               Text(
                 strings.newPlantsUnlock,
+
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
 
               const SizedBox(height: 12),
 
+              // ==================================================
+              // PLANTS GRID
+              // ==================================================
               GridView.builder(
                 shrinkWrap: true,
 
@@ -258,7 +552,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected && isUnlocked
-                              ? AppTheme.secondaryColor.withOpacity(0.18)
+                              ? AppTheme.secondaryColor.withValues(alpha: 0.18)
                               : Colors.white,
 
                           borderRadius: BorderRadius.circular(18),
@@ -281,6 +575,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                                 children: [
                                   Icon(
                                     plant['icon'],
+
                                     color: isUnlocked
                                         ? AppTheme.primaryColor
                                         : Colors.grey,
@@ -298,27 +593,48 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
                                     children: [
                                       Text(
-                                        strings.plantName(plant['name'] as String),
+                                        strings.plantName(
+                                          plant['name'] as String,
+                                        ),
+
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
 
-                                          color: isUnlocked
-                                              ? AppTheme.textColor
-                                              : Colors.grey,
+                                          color: !isUnlocked
+                                              ? Colors.grey
+                                              : isSelected
+                                              ? Colors.white
+                                              : AppTheme.textColor,
                                         ),
                                       ),
 
-                                      if (plant['requiredStreak'] > 0)
-                                        Text(
-                                          isUnlocked
-                                              ? 'Unlocked'
-                                              : '${plant['requiredStreak']} day streak',
+                                      const SizedBox(height: 3),
 
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.grey.shade600,
-                                          ),
+                                      Text(
+                                        plant['requiredStreak'] == 0
+                                            ? strings.alwaysAvailable
+                                            : strings
+                                                  .streak(
+                                                    plant['requiredStreak']
+                                                        as int,
+                                                  )
+                                                  .replaceAll('🔥', '')
+                                                  .trim(),
+
+                                        style: TextStyle(
+                                          fontSize: 10,
+
+                                          color: !isUnlocked
+                                              ? Colors.grey.shade600
+                                              : isSelected
+                                              ? Colors.white70
+                                              : AppTheme.primaryColor,
+
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
                                         ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -329,6 +645,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                               const Positioned(
                                 top: 8,
                                 right: 8,
+
                                 child: Icon(
                                   Icons.lock_outline,
                                   size: 18,
@@ -345,8 +662,12 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
               const SizedBox(height: 30),
 
+              // ==================================================
+              // SAVE BUTTON
+              // ==================================================
               SizedBox(
                 width: double.infinity,
+
                 height: 55,
 
                 child: ElevatedButton.icon(
