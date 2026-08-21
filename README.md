@@ -52,7 +52,7 @@ The app turns completed habits into growing digital plants, allowing users to bu
   </tr>
   <tr>
     <td align="center">
-      <img src="screenshots/garden.jpeg" width="250"/>
+      <img src="screenshots/garden.jpg" width="250"/>
       <br>
       <b>Garden</b>
     </td>
