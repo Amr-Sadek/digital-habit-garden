@@ -42,13 +42,6 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    androidComponents {
-        onVariants(selector().withBuildType("release")) { variant ->
-            variant.outputs.forEach { output ->
-                output.outputFileName.set("Digital_Habit_Garden_${flutter.versionName}.apk")
-            }
-        }
-    }
 }
 
 dependencies {
