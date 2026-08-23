@@ -59,7 +59,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final gardenTheme = await _gardenThemeService.loadTheme();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _habits = habits;
@@ -92,10 +94,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
-      _habits.add(habit);
+      _habits = [..._habits, habit];
     });
 
     await _saveHabits();
@@ -118,9 +122,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    setState(() {});
+    setState(() {
+      final index = _habits.indexWhere((item) => item.id == updatedHabit.id);
+
+      if (index != -1) {
+        _habits[index] = updatedHabit;
+      }
+    });
 
     await _saveHabits();
   }
@@ -142,7 +154,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     );
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {});
   }
@@ -158,7 +172,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       habit.completeToday();
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {});
 
@@ -174,30 +190,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final shouldDelete = await showDialog<bool>(
       context: context,
-
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(strings.deleteHabit),
-
           content: Text(strings.deleteHabitMessage(habit.name)),
-
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-
               child: Text(strings.cancel),
             ),
-
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-
               child: Text(
                 strings.delete,
-
                 style: const TextStyle(color: Colors.red),
               ),
             ),
@@ -210,10 +219,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
-      _habits.removeWhere((item) => item.id == habit.id);
+      _habits = _habits.where((item) => item.id != habit.id).toList();
+    });
+
+    await _saveHabits();
+  }
+
+  // ============================================================
+  // REORDER HABITS
+  // ============================================================
+
+  Future<void> _reorderHabits(List<Habit> reorderedHabits) async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _habits = List<Habit>.from(reorderedHabits);
     });
 
     await _saveHabits();
@@ -224,7 +251,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // ============================================================
 
   Future<void> _changeGardenTheme(GardenTheme theme) async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _gardenTheme = theme;
@@ -258,6 +287,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onDeleteHabit: _deleteHabit,
         onEditHabit: _openEditHabit,
         onOpenHabitDetails: _openHabitDetails,
+        onHabitsReordered: _reorderHabits,
       ),
 
       // ========================================================
@@ -265,15 +295,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // ========================================================
       GardenScreen(
         habits: _habits,
-
         gardenTheme: _gardenTheme,
-
         onThemeChanged: _changeGardenTheme,
-
         onToggleHabit: _toggleHabit,
-
         onEditHabit: _openEditHabit,
-
         onDeleteHabit: _deleteHabit,
       ),
 
@@ -319,41 +344,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),
-
             selectedIcon: const Icon(Icons.home),
-
             label: strings.home,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.checklist_outlined),
-
             selectedIcon: const Icon(Icons.checklist),
-
             label: strings.habits,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.local_florist_outlined),
-
             selectedIcon: const Icon(Icons.local_florist),
-
             label: strings.garden,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.bar_chart_outlined),
-
             selectedIcon: const Icon(Icons.bar_chart),
-
             label: strings.progress,
           ),
 
           NavigationDestination(
             icon: const Icon(Icons.person_outline),
-
             selectedIcon: const Icon(Icons.person),
-
             label: strings.profile,
           ),
         ],

@@ -428,11 +428,6 @@ class _GardenScreenState extends State<GardenScreen> {
               ),
 
               // ==================================================
-              // TOP HINT
-              // ==================================================
-              Positioned(top: 16, left: 16, right: 16, child: _gardenHint()),
-
-              // ==================================================
               // PAGE DOTS ONLY
               // ==================================================
               if (_gardenPageCount > 1)
@@ -570,13 +565,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 537 / 497,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.474, y: 0.505, plantSize: 56),
+        _PlantSpot(x: 0.500, y: 0.495, plantSize: 85),
 
         // Left / foreground
-        _PlantSpot(x: 0.170, y: 0.593, plantSize: 65),
+        _PlantSpot(x: 0.195, y: 0.585, plantSize: 95),
 
         // Right / foreground
-        _PlantSpot(x: 0.788, y: 0.595, plantSize: 67),
+        _PlantSpot(x: 0.810, y: 0.595, plantSize: 95),
       ],
     ),
 
@@ -587,13 +582,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 536 / 493,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.515, y: 0.585, plantSize: 60),
+        _PlantSpot(x: 0.540, y: 0.580, plantSize: 85),
 
         // Left
-        _PlantSpot(x: 0.302, y: 0.700, plantSize: 70),
+        _PlantSpot(x: 0.325, y: 0.690, plantSize: 100),
 
         // Right
-        _PlantSpot(x: 0.750, y: 0.705, plantSize: 73),
+        _PlantSpot(x: 0.772, y: 0.700, plantSize: 100),
       ],
     ),
 
@@ -604,13 +599,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 544 / 492,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.490, y: 0.240, plantSize: 55),
+        _PlantSpot(x: 0.515, y: 0.240, plantSize: 80),
 
         // Left
-        _PlantSpot(x: 0.210, y: 0.363, plantSize: 65),
+        _PlantSpot(x: 0.230, y: 0.360, plantSize: 90),
 
         // Right
-        _PlantSpot(x: 0.740, y: 0.355, plantSize: 65),
+        _PlantSpot(x: 0.765, y: 0.350, plantSize: 90),
       ],
     ),
 
@@ -621,13 +616,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 535 / 492,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.480, y: 0.380, plantSize: 40),
+        _PlantSpot(x: 0.505, y: 0.365, plantSize: 70),
 
         // Left
-        _PlantSpot(x: 0.152, y: 0.440, plantSize: 55),
+        _PlantSpot(x: 0.177, y: 0.420, plantSize: 90),
 
         // Large front / center
-        _PlantSpot(x: 0.477, y: 0.685, plantSize: 75),
+        _PlantSpot(x: 0.500, y: 0.650, plantSize: 120),
       ],
     ),
   ];
@@ -644,13 +639,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 539 / 491,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.474, y: 0.505, plantSize: 56),
+        _PlantSpot(x: 0.500, y: 0.495, plantSize: 85),
 
         // Left / foreground
-        _PlantSpot(x: 0.170, y: 0.593, plantSize: 65),
+        _PlantSpot(x: 0.195, y: 0.585, plantSize: 95),
 
         // Right / foreground
-        _PlantSpot(x: 0.788, y: 0.595, plantSize: 67),
+        _PlantSpot(x: 0.810, y: 0.595, plantSize: 95),
       ],
     ),
 
@@ -661,13 +656,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 530 / 490,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.515, y: 0.585, plantSize: 60),
+        _PlantSpot(x: 0.5351, y: 0.580, plantSize: 85),
 
         // Left
-        _PlantSpot(x: 0.302, y: 0.700, plantSize: 70),
+        _PlantSpot(x: 0.325, y: 0.690, plantSize: 100),
 
         // Right
-        _PlantSpot(x: 0.750, y: 0.705, plantSize: 73),
+        _PlantSpot(x: 0.772, y: 0.700, plantSize: 100),
       ],
     ),
 
@@ -678,13 +673,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 537 / 486,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.490, y: 0.240, plantSize: 55),
+        _PlantSpot(x: 0.520, y: 0.230, plantSize: 80),
 
         // Left
-        _PlantSpot(x: 0.210, y: 0.363, plantSize: 65),
+        _PlantSpot(x: 0.230, y: 0.355, plantSize: 90),
 
         // Right
-        _PlantSpot(x: 0.750, y: 0.345, plantSize: 65),
+        _PlantSpot(x: 0.775, y: 0.345, plantSize: 90),
       ],
     ),
 
@@ -695,13 +690,13 @@ class _GardenScreenState extends State<GardenScreen> {
       aspectRatio: 535 / 487,
       spots: [
         // Center / back
-        _PlantSpot(x: 0.480, y: 0.370, plantSize: 40),
+        _PlantSpot(x: 0.505, y: 0.360, plantSize: 70),
 
         // Left
-        _PlantSpot(x: 0.152, y: 0.433, plantSize: 55),
+        _PlantSpot(x: 0.177, y: 0.415, plantSize: 90),
 
         // Large front / center
-        _PlantSpot(x: 0.477, y: 0.680, plantSize: 75),
+        _PlantSpot(x: 0.500, y: 0.645, plantSize: 120),
       ],
     ),
   ];
@@ -761,48 +756,6 @@ class _GardenScreenState extends State<GardenScreen> {
           ),
         );
       }),
-    );
-  }
-
-  // ============================================================
-  // GARDEN HINT
-  // ============================================================
-
-  Widget _gardenHint() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xDD202A21)
-            : Colors.black.withValues(alpha: .42),
-        borderRadius: BorderRadius.circular(17),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.touch_app_outlined,
-            size: 20,
-            color: Color(0xFF63B76A),
-          ),
-
-          const SizedBox(width: 9),
-
-          Expanded(
-            child: Text(
-              strings.isArabic
-                  ? 'اضغط على النبات لرؤية نموه'
-                  : 'Tap a plant to see its growth',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1160,83 +1113,85 @@ class _GardenPlant extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: selected ? 1.08 : 1.0,
-        duration: const Duration(milliseconds: 180),
-        child: SizedBox(
-          width: 130,
-          height: plantSize + 72,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.topCenter,
-            children: [
-              // ==================================================
-              // POT / PLANT
-              // ==================================================
-              Positioned(
-                top: 0,
-                left: (130 - plantSize) / 2,
-                child: PlantWidget(habit: habit, size: plantSize),
+      child: SizedBox(
+        width: 130,
+        height: plantSize + 72,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
+          children: [
+            // ================================================================
+            // PLANT
+            // ================================================================
+            Positioned(
+              top: 0,
+              left: (130 - plantSize) / 2,
+              width: plantSize,
+              height: plantSize,
+              child: Image.asset(
+                habit.plantImagePath,
+                width: plantSize,
+                height: plantSize,
+                fit: BoxFit.contain,
+                alignment: Alignment.bottomCenter,
               ),
+            ),
 
-              // ==================================================
-              // NAME
-              // ==================================================
-              Positioned(
-                top: plantSize + 13,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xA83E7C4A)
-                          : Colors.black.withValues(alpha: .36),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Text(
-                      habit.name,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+            // ================================================================
+            // NAME
+            // ================================================================
+            Positioned(
+              top: plantSize + 7,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? const Color(0xA83E7C4A)
+                        : Colors.black.withValues(alpha: .36),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // الاسم
+                        Text(
+                          habit.name,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+
+                        // علامة الصح على يمين الاسم
+                        if (habit.isCompletedToday) ...[
+                          const SizedBox(width: 4),
+
+                          const Icon(
+                            Icons.check_circle,
+                            size: 17,
+                            color: Color(0xFF8FD18A),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
               ),
-
-              // ==================================================
-              // COMPLETED
-              // ==================================================
-              if (habit.isCompletedToday)
-                Positioned(
-                  top: -3,
-                  right: 8,
-                  child: Container(
-                    width: 21,
-                    height: 21,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFFE8F0E7) : Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      size: 20,
-                      color: Color(0xFF3E7C4A),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
