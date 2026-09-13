@@ -196,17 +196,21 @@ class Habit {
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      plantType: json['plantType'],
-      createdAt: DateTime.parse(json['createdAt']),
+      id:
+          json['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      name: json['name'] as String? ?? 'Untitled Habit',
+      description: json['description'] as String? ?? '',
+      plantType: json['plantType'] as String? ?? 'flower',
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
       completedDates: List<String>.from(json['completedDates'] ?? []),
 
       // Reminder
-      reminderEnabled: json['reminderEnabled'] ?? false,
-      reminderHour: json['reminderHour'],
-      reminderMinute: json['reminderMinute'],
+      reminderEnabled: json['reminderEnabled'] as bool? ?? false,
+      reminderHour: json['reminderHour'] as int?,
+      reminderMinute: json['reminderMinute'] as int?,
     );
   }
 }

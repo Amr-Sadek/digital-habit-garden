@@ -74,8 +74,12 @@ class _NotificationSettingsScreenState
         _loading = false;
       });
 
+      final strings = AppStringsScope.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load notification settings: $e')),
+        SnackBar(
+          content: Text(strings.couldNotLoadNotificationSettings(e.toString())),
+        ),
       );
     }
   }
@@ -126,8 +130,12 @@ class _NotificationSettingsScreenState
           _enabled = true;
         });
 
+        final strings = AppStringsScope.of(context);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not disable notifications: $e')),
+          SnackBar(
+            content: Text(strings.couldNotDisableNotifications(e.toString())),
+          ),
         );
       } finally {
         if (mounted) {
@@ -165,8 +173,10 @@ class _NotificationSettingsScreenState
           _enabled = false;
         });
 
+        final strings = AppStringsScope.of(context);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notification permission is required.')),
+          SnackBar(content: Text(strings.notificationPermissionRequired)),
         );
 
         await _saveSettings();
@@ -205,8 +215,12 @@ class _NotificationSettingsScreenState
         _enabled = false;
       });
 
+      final strings = AppStringsScope.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not enable notifications: $e')),
+        SnackBar(
+          content: Text(strings.couldNotEnableNotifications(e.toString())),
+        ),
       );
 
       await _saveSettings();
@@ -262,8 +276,12 @@ class _NotificationSettingsScreenState
         return;
       }
 
+      final strings = AppStringsScope.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update reminder time: $e')),
+        SnackBar(
+          content: Text(strings.couldNotUpdateReminderTime(e.toString())),
+        ),
       );
     }
   }

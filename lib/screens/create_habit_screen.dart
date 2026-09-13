@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
@@ -186,7 +188,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     // ----------------------------------------------------------
 
     final habit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(10000)}',
 
       name: _nameController.text.trim(),
 

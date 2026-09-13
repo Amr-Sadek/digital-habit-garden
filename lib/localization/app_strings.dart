@@ -485,6 +485,26 @@ class AppStrings {
       ? 'احصل على تذكير لطيف كل يوم لإكمال عاداتك والحفاظ على نمو حديقتك.'
       : 'Get a gentle reminder every day to complete your habits and keep your garden growing.';
 
+  String get notificationPermissionRequired => isArabic
+      ? 'إذن الإشعارات مطلوب.'
+      : 'Notification permission is required.';
+
+  String couldNotLoadNotificationSettings(String error) => isArabic
+      ? 'تعذر تحميل إعدادات الإشعارات: $error'
+      : 'Could not load notification settings: $error';
+
+  String couldNotEnableNotifications(String error) => isArabic
+      ? 'تعذر تفعيل الإشعارات: $error'
+      : 'Could not enable notifications: $error';
+
+  String couldNotDisableNotifications(String error) => isArabic
+      ? 'تعذر إيقاف الإشعارات: $error'
+      : 'Could not disable notifications: $error';
+
+  String couldNotUpdateReminderTime(String error) => isArabic
+      ? 'تعذر تحديث وقت التذكير: $error'
+      : 'Could not update reminder time: $error';
+
   // ============================================================
   // DATE / TIME
   // ============================================================

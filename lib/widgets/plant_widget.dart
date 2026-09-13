@@ -77,6 +77,13 @@ class PlantWidget extends StatelessWidget {
             habit.plantImagePath,
             fit: BoxFit.contain,
             alignment: Alignment.bottomCenter,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.local_florist_outlined,
+                size: imageSize * 0.7,
+                color: const Color(0xFF4F7D4A),
+              );
+            },
           ),
         ),
       ),

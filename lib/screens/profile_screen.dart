@@ -239,25 +239,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() {
       _name = loadedName;
-      _nameController.text = loadedName == strings.habitGardener ? '' : loadedName;
+      _nameController.text = loadedName == strings.habitGardener
+          ? ''
+          : loadedName;
 
       _imagePath = savedImage;
       _isLoading = false;
-    });
-  }
-  // ============================================================
-  // SAVE NAME
-  // ============================================================
-
-  Future<void> _saveName(String name) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString(_nameKey, name);
-
-    if (!mounted) return;
-
-    setState(() {
-      _name = name;
     });
   }
 
@@ -288,7 +275,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStringsScope.of(context).couldNotSelectImage)),
+        SnackBar(
+          content: Text(AppStringsScope.of(context).couldNotSelectImage),
+        ),
       );
     }
   }
@@ -303,9 +292,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(AppStringsScope.of(context).pleaseEnterName)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStringsScope.of(context).pleaseEnterName)),
+      );
       return;
     }
 

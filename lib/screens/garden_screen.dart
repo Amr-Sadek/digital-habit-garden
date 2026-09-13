@@ -117,19 +117,23 @@ class _GardenScreenState extends State<GardenScreen> {
         pixelRatio: MediaQuery.of(context).devicePixelRatio,
       );
 
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      try {
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-      if (byteData == null) {
-        return null;
+        if (byteData == null) {
+          return null;
+        }
+
+        final directory = await getTemporaryDirectory();
+
+        final file = File('${directory.path}/my_garden.png');
+
+        await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
+
+        return file;
+      } finally {
+        image.dispose();
       }
-
-      final directory = await getTemporaryDirectory();
-
-      final file = File('${directory.path}/my_garden.png');
-
-      await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
-
-      return file;
     } catch (_) {
       return null;
     }
@@ -1108,8 +1112,6 @@ class _GardenPlant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
