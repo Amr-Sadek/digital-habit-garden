@@ -29,14 +29,10 @@ class NotificationService {
     tz.initializeTimeZones();
 
     // Get device timezone.
-    try {
-      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
-    } catch (_) {
-      try {
-        tz.setLocalLocation(tz.getLocation('UTC'));
-      } catch (_) {}
-    }
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+
+    // Set timezone used by scheduled notifications.
+    tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
 
     // Android initialization.
     const androidSettings = AndroidInitializationSettings(
@@ -175,6 +171,10 @@ class NotificationService {
 
     final exactAlarmPermission = await requestExactAlarmPermission();
 
+    if (!exactAlarmPermission) {
+      return false;
+    }
+
     // ----------------------------------------------------------
     // Cancel previous daily reminder.
     // ----------------------------------------------------------
@@ -228,10 +228,6 @@ class NotificationService {
     // Schedule daily notification.
     // ----------------------------------------------------------
 
-    final scheduleMode = exactAlarmPermission
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
     try {
       await _notifications.zonedSchedule(
         id: _dailyNotificationId,
@@ -248,7 +244,7 @@ class NotificationService {
 
         notificationDetails: notificationDetails,
 
-        androidScheduleMode: scheduleMode,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
 
         // Repeat every day at this time.
         matchDateTimeComponents: DateTimeComponents.time,
@@ -256,26 +252,6 @@ class NotificationService {
 
       return true;
     } catch (_) {
-      if (scheduleMode == AndroidScheduleMode.exactAllowWhileIdle) {
-        try {
-          await _notifications.zonedSchedule(
-            id: _dailyNotificationId,
-            title: isArabic
-                ? 'حان وقت تنمية حديقتك 🌱'
-                : 'Time to grow your garden 🌱',
-            body: isArabic
-                ? 'عاداتك في انتظارك. حافظ على استمرار سلسلتك!'
-                : 'Your habits are waiting for you. Keep your streak alive!',
-            scheduledDate: scheduledDate,
-            notificationDetails: notificationDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            matchDateTimeComponents: DateTimeComponents.time,
-          );
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }
       return false;
     }
   }
@@ -334,6 +310,10 @@ class NotificationService {
 
     final exactAlarmPermission = await requestExactAlarmPermission();
 
+    if (!exactAlarmPermission) {
+      return false;
+    }
+
     // ----------------------------------------------------------
     // Cancel old reminder for this habit only.
     // ----------------------------------------------------------
@@ -387,10 +367,6 @@ class NotificationService {
     // Schedule notification.
     // ----------------------------------------------------------
 
-    final scheduleMode = exactAlarmPermission
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
     try {
       await _notifications.zonedSchedule(
         id: _notificationId(habitId),
@@ -405,7 +381,7 @@ class NotificationService {
 
         notificationDetails: notificationDetails,
 
-        androidScheduleMode: scheduleMode,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
 
         // Repeat every day at this time.
         matchDateTimeComponents: DateTimeComponents.time,
@@ -413,24 +389,6 @@ class NotificationService {
 
       return true;
     } catch (_) {
-      if (scheduleMode == AndroidScheduleMode.exactAllowWhileIdle) {
-        try {
-          await _notifications.zonedSchedule(
-            id: _notificationId(habitId),
-            title: isArabic ? 'حان وقت عادتك 🌱' : 'Time for your habit 🌱',
-            body: isArabic
-                ? 'حان وقت إكمال "$habitName"'
-                : 'It is time to complete "$habitName".',
-            scheduledDate: scheduledDate,
-            notificationDetails: notificationDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            matchDateTimeComponents: DateTimeComponents.time,
-          );
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }
       return false;
     }
   }

@@ -117,23 +117,19 @@ class _GardenScreenState extends State<GardenScreen> {
         pixelRatio: MediaQuery.of(context).devicePixelRatio,
       );
 
-      try {
-        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-        if (byteData == null) {
-          return null;
-        }
-
-        final directory = await getTemporaryDirectory();
-
-        final file = File('${directory.path}/my_garden.png');
-
-        await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
-
-        return file;
-      } finally {
-        image.dispose();
+      if (byteData == null) {
+        return null;
       }
+
+      final directory = await getTemporaryDirectory();
+
+      final file = File('${directory.path}/my_garden.png');
+
+      await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
+
+      return file;
     } catch (_) {
       return null;
     }
