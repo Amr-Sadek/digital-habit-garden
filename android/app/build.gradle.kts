@@ -1,3 +1,13 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -7,7 +17,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.digital_habit_garden"
+    namespace = "com.amrsadek.digitalhabitgarden"
 
     compileSdk = flutter.compileSdkVersion
 
@@ -27,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.digital_habit_garden"
+        applicationId = "com.amrsadek.digitalhabitgarden"
 
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
@@ -36,16 +46,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+
     buildTypes {
         release {
-            // Signing with debug keys for now
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
 
 dependencies {
-    // Required for flutter_local_notifications
+    // Required by flutter_local_notifications
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 

@@ -1,4 +1,4 @@
-package com.example.digital_habit_garden
+package com.amrsadek.digitalhabitgarden
 
 import io.flutter.embedding.android.FlutterActivity
 

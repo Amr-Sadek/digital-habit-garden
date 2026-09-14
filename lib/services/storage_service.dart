@@ -22,21 +22,10 @@ class StorageService {
 
     try {
       final List<dynamic> decodedData = jsonDecode(habitsJson);
-      final List<Habit> loaded = [];
 
-      for (final item in decodedData) {
-        try {
-          if (item is Map<String, dynamic>) {
-            loaded.add(Habit.fromJson(item));
-          } else if (item is Map) {
-            loaded.add(Habit.fromJson(Map<String, dynamic>.from(item)));
-          }
-        } catch (_) {
-          // Skip individual corrupted habit entry without dropping all user habits
-        }
-      }
-
-      return loaded;
+      return decodedData
+          .map((habit) => Habit.fromJson(Map<String, dynamic>.from(habit)))
+          .toList();
     } catch (_) {
       return [];
     }

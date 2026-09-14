@@ -74,12 +74,8 @@ class _NotificationSettingsScreenState
         _loading = false;
       });
 
-      final strings = AppStringsScope.of(context);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(strings.couldNotLoadNotificationSettings(e.toString())),
-        ),
+        SnackBar(content: Text('Could not load notification settings: $e')),
       );
     }
   }
@@ -130,12 +126,8 @@ class _NotificationSettingsScreenState
           _enabled = true;
         });
 
-        final strings = AppStringsScope.of(context);
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(strings.couldNotDisableNotifications(e.toString())),
-          ),
+          SnackBar(content: Text('Could not disable notifications: $e')),
         );
       } finally {
         if (mounted) {
@@ -173,10 +165,8 @@ class _NotificationSettingsScreenState
           _enabled = false;
         });
 
-        final strings = AppStringsScope.of(context);
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.notificationPermissionRequired)),
+          const SnackBar(content: Text('Notification permission is required.')),
         );
 
         await _saveSettings();
@@ -215,12 +205,8 @@ class _NotificationSettingsScreenState
         _enabled = false;
       });
 
-      final strings = AppStringsScope.of(context);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(strings.couldNotEnableNotifications(e.toString())),
-        ),
+        SnackBar(content: Text('Could not enable notifications: $e')),
       );
 
       await _saveSettings();
@@ -276,12 +262,8 @@ class _NotificationSettingsScreenState
         return;
       }
 
-      final strings = AppStringsScope.of(context);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(strings.couldNotUpdateReminderTime(e.toString())),
-        ),
+        SnackBar(content: Text('Could not update reminder time: $e')),
       );
     }
   }
