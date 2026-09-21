@@ -182,10 +182,15 @@ class _GardenScreenState extends State<GardenScreen> {
             onPressed: widget.habits.isEmpty ? null : _shareGarden,
             icon: const Icon(Icons.share_outlined),
           ),
-          IconButton(
-            tooltip: strings.customizeGarden,
-            onPressed: () => _showThemePicker(context),
-            icon: const Icon(Icons.tune_rounded),
+          _SunMoonToggle(
+            theme: widget.gardenTheme,
+            onToggle: () {
+              final nextTheme = widget.gardenTheme == GardenTheme.night
+                  ? GardenTheme.morning
+                  : GardenTheme.night;
+              widget.onThemeChanged(nextTheme);
+            },
+            onLongPress: () => _showThemePicker(context),
           ),
         ],
       ),
@@ -460,25 +465,31 @@ class _GardenScreenState extends State<GardenScreen> {
           clipBehavior: Clip.none,
           children: [
             // ==================================================
-            // IMAGE
+            // IMAGE WITH SMOOTH CROSS-FADE ANIMATION
             // ==================================================
             Positioned.fill(
-              child: Image.asset(
-                _gardenImagePath(gardenIndex),
-                fit: BoxFit.fill,
-                alignment: Alignment.center,
-                errorBuilder: (context, error, stackTrace) {
-                  return const ColoredBox(
-                    color: Color(0xFF101710),
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        size: 50,
-                        color: Color(0xFF3E7C4A),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                switchInCurve: Curves.easeInOut,
+                switchOutCurve: Curves.easeInOut,
+                child: Image.asset(
+                  _gardenImagePath(gardenIndex),
+                  key: ValueKey(_gardenImagePath(gardenIndex)),
+                  fit: BoxFit.fill,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const ColoredBox(
+                      color: Color(0xFF101710),
+                      child: Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 50,
+                          color: Color(0xFF3E7C4A),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
 
@@ -507,6 +518,9 @@ class _GardenScreenState extends State<GardenScreen> {
     _GardenLayout layout,
     BoxConstraints constraints,
   ) {
+    // Calculate responsive scale factor relative to standard mobile card width (380dp)
+    final scaleFactor = constraints.maxWidth / 380.0;
+
     return List.generate(gardenHabits.length, (localIndex) {
       final habit = gardenHabits[localIndex];
 
@@ -514,7 +528,7 @@ class _GardenScreenState extends State<GardenScreen> {
 
       final spot = layout.spots[localIndex];
 
-      final plantSize = spot.plantSize;
+      final scaledPlantSize = spot.plantSize * scaleFactor;
 
       // ------------------------------------------------------
       // The x/y point is the EXACT CENTER
@@ -525,27 +539,23 @@ class _GardenScreenState extends State<GardenScreen> {
 
       final centerY = constraints.maxHeight * spot.y;
 
-      // ------------------------------------------------------
-      // Large invisible hit area.
-      // The actual pot remains perfectly centered.
-      // ------------------------------------------------------
+      final scaledHitWidth = 130.0 * scaleFactor;
 
-      const hitWidth = 130.0;
+      final scaledHitHeight = scaledPlantSize + (72.0 * scaleFactor);
 
-      final hitHeight = plantSize + 72;
+      final left = centerX - (scaledHitWidth / 2);
 
-      final left = centerX - (hitWidth / 2);
-
-      final top = centerY - (plantSize / 2);
+      final top = centerY - (scaledPlantSize / 2);
 
       return Positioned(
         left: left,
         top: top,
-        width: hitWidth,
-        height: hitHeight,
+        width: scaledHitWidth,
+        height: scaledHitHeight,
         child: _GardenPlant(
           habit: habit,
-          plantSize: plantSize,
+          plantSize: scaledPlantSize,
+          scaleFactor: scaleFactor,
           selected: _selectedPlantIndex == globalIndex,
           onTap: () => _selectPlant(globalIndex),
         ),
@@ -1096,24 +1106,32 @@ class _PlantSpot {
 class _GardenPlant extends StatelessWidget {
   final Habit habit;
   final double plantSize;
+  final double scaleFactor;
   final bool selected;
   final VoidCallback onTap;
 
   const _GardenPlant({
     required this.habit,
     required this.plantSize,
+    this.scaleFactor = 1.0,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final scaledWidth = 130.0 * scaleFactor;
+    final fontSize = (11.0 * scaleFactor).clamp(9.0, 22.0);
+    final iconSize = (17.0 * scaleFactor).clamp(14.0, 28.0);
+    final textPaddingV = (3.0 * scaleFactor).clamp(2.0, 8.0);
+    final textPaddingH = (7.0 * scaleFactor).clamp(5.0, 16.0);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 130,
-        height: plantSize + 72,
+        width: scaledWidth,
+        height: plantSize + (72.0 * scaleFactor),
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.topCenter,
@@ -1123,36 +1141,30 @@ class _GardenPlant extends StatelessWidget {
             // ================================================================
             Positioned(
               top: 0,
-              left: (130 - plantSize) / 2,
+              left: (scaledWidth - plantSize) / 2,
               width: plantSize,
               height: plantSize,
-              child: Image.asset(
-                habit.plantImagePath,
-                width: plantSize,
-                height: plantSize,
-                fit: BoxFit.contain,
-                alignment: Alignment.bottomCenter,
-              ),
+              child: PlantWidget(habit: habit, size: plantSize),
             ),
 
             // ================================================================
             // NAME
             // ================================================================
             Positioned(
-              top: plantSize + 7,
+              top: plantSize + (7.0 * scaleFactor),
               left: 0,
               right: 0,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 3,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: textPaddingH,
+                    vertical: textPaddingV,
                   ),
                   decoration: BoxDecoration(
                     color: selected
                         ? const Color(0xA83E7C4A)
                         : Colors.black.withValues(alpha: .36),
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(9 * scaleFactor),
                   ),
                   child: Directionality(
                     textDirection: TextDirection.ltr,
@@ -1166,21 +1178,21 @@ class _GardenPlant extends StatelessWidget {
                           softWrap: false,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
+                            fontSize: fontSize,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
 
                         // علامة الصح على يمين الاسم
                         if (habit.isCompletedToday) ...[
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4 * scaleFactor),
 
-                          const Icon(
+                          Icon(
                             Icons.check_circle,
-                            size: 17,
-                            color: Color(0xFF8FD18A),
+                            size: iconSize,
+                            color: const Color(0xFF8FD18A),
                           ),
                         ],
                       ],
@@ -1190,6 +1202,60 @@ class _GardenPlant extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// ANIMATED SUN / MOON THEME TOGGLE BUTTON
+// ============================================================================
+
+class _SunMoonToggle extends StatelessWidget {
+  final GardenTheme theme;
+  final VoidCallback onToggle;
+  final VoidCallback? onLongPress;
+
+  const _SunMoonToggle({
+    required this.theme,
+    required this.onToggle,
+    this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isNight = theme == GardenTheme.night;
+
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: IconButton(
+        tooltip: isNight ? 'Morning Garden' : 'Night Garden',
+        onPressed: onToggle,
+        icon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 450),
+          transitionBuilder: (child, animation) {
+            return RotationTransition(
+              turns: Tween<double>(begin: 0.75, end: 1.0).animate(animation),
+              child: ScaleTransition(
+                scale: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+            );
+          },
+          child: isNight
+              ? const Icon(
+                  Icons.nightlight_round,
+                  key: ValueKey('night_moon_icon'),
+                  color: Color(0xFFF2B84B),
+                  size: 26,
+                )
+              : const Icon(
+                  Icons.wb_sunny_rounded,
+                  key: ValueKey('morning_sun_icon'),
+                  color: Color(0xFFFFA000),
+                  size: 26,
+                ),
         ),
       ),
     );
