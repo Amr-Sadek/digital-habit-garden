@@ -4,6 +4,7 @@ import '../localization/app_strings.dart';
 import '../models/garden_theme.dart';
 import '../models/habit.dart';
 import '../services/garden_theme_service.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
@@ -58,6 +59,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final habits = await _storageService.loadHabits();
 
     final gardenTheme = await _gardenThemeService.loadTheme();
+
+    // Sync habit reminders according to today's completion state
+    for (final habit in habits) {
+      if (habit.reminderEnabled &&
+          habit.reminderHour != null &&
+          habit.reminderMinute != null) {
+        await NotificationService.instance.scheduleHabitReminder(
+          habitId: habit.id,
+          habitName: habit.name,
+          hour: habit.reminderHour!,
+          minute: habit.reminderMinute!,
+          skipToday: habit.isCompletedToday,
+        );
+      }
+    }
 
     if (!mounted) {
       return;
@@ -170,6 +186,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       habit.uncompleteToday();
     } else {
       habit.completeToday();
+    }
+
+    // Reschedule or skip today's notification depending on completion status
+    if (habit.reminderEnabled &&
+        habit.reminderHour != null &&
+        habit.reminderMinute != null) {
+      await NotificationService.instance.scheduleHabitReminder(
+        habitId: habit.id,
+        habitName: habit.name,
+        hour: habit.reminderHour!,
+        minute: habit.reminderMinute!,
+        skipToday: habit.isCompletedToday,
+      );
     }
 
     if (!mounted) {

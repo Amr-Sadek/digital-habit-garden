@@ -408,9 +408,36 @@ class _HabitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final completed = habit.isCompletedToday;
 
-    // FIX:
-    // strings was missing here.
     final strings = AppStringsScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardColor = completed
+        ? (isDark
+              ? AppTheme.primaryColor.withValues(alpha: 0.22)
+              : AppTheme.secondaryColor.withValues(alpha: 0.10))
+        : (isDark ? Theme.of(context).cardColor : Colors.white);
+
+    final borderColor = completed
+        ? (isDark
+              ? AppTheme.primaryColor.withValues(alpha: 0.50)
+              : AppTheme.primaryColor.withValues(alpha: 0.35))
+        : (isDark ? Colors.grey.shade800 : Colors.grey.withValues(alpha: 0.13));
+
+    final titleColor = completed
+        ? (isDark ? Colors.grey.shade400 : Colors.grey.shade600)
+        : (isDark ? Colors.white : Colors.black87);
+
+    final badgeBgColor = completed
+        ? (isDark
+              ? AppTheme.primaryColor.withValues(alpha: 0.25)
+              : AppTheme.primaryColor.withValues(alpha: 0.10))
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.grey.withValues(alpha: 0.08));
+
+    final badgeTextColor = completed
+        ? (isDark ? const Color(0xFF8FD18A) : AppTheme.primaryColor)
+        : (isDark ? Colors.grey.shade300 : Colors.grey.shade600);
 
     return Material(
       color: Colors.transparent,
@@ -425,23 +452,15 @@ class _HabitCard extends StatelessWidget {
           padding: const EdgeInsets.all(15),
 
           decoration: BoxDecoration(
-            color: completed
-                ? AppTheme.secondaryColor.withValues(alpha: 0.10)
-                : Colors.white,
+            color: cardColor,
 
             borderRadius: BorderRadius.circular(22),
 
-            border: Border.all(
-              color: completed
-                  ? AppTheme.primaryColor.withValues(alpha: 0.35)
-                  : Colors.grey.withValues(alpha: 0.13),
-
-              width: completed ? 1.4 : 1,
-            ),
+            border: Border.all(color: borderColor, width: completed ? 1.4 : 1),
 
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.035),
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.035),
                 blurRadius: 12,
                 offset: const Offset(0, 5),
               ),
@@ -479,9 +498,7 @@ class _HabitCard extends StatelessWidget {
                             ? TextDecoration.lineThrough
                             : null,
 
-                        color: completed
-                            ? Colors.grey.shade600
-                            : Colors.black87,
+                        color: titleColor,
                       ),
                     ),
 
@@ -496,7 +513,9 @@ class _HabitCard extends StatelessWidget {
 
                           color: habit.currentStreak > 0
                               ? Colors.orange.shade700
-                              : Colors.grey.shade500,
+                              : (isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade500),
                         ),
 
                         const SizedBox(width: 4),
@@ -506,7 +525,9 @@ class _HabitCard extends StatelessWidget {
 
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -520,9 +541,7 @@ class _HabitCard extends StatelessWidget {
                           ),
 
                           decoration: BoxDecoration(
-                            color: completed
-                                ? AppTheme.primaryColor.withValues(alpha: 0.10)
-                                : Colors.grey.withValues(alpha: 0.08),
+                            color: badgeBgColor,
 
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -534,9 +553,7 @@ class _HabitCard extends StatelessWidget {
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
 
-                              color: completed
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey.shade600,
+                              color: badgeTextColor,
                             ),
                           ),
                         ),
@@ -570,7 +587,9 @@ class _HabitCard extends StatelessWidget {
                     border: Border.all(
                       color: completed
                           ? AppTheme.primaryColor
-                          : Colors.grey.shade300,
+                          : (isDark
+                                ? Colors.grey.shade600
+                                : Colors.grey.shade300),
 
                       width: 1.5,
                     ),
@@ -579,7 +598,11 @@ class _HabitCard extends StatelessWidget {
                   child: Icon(
                     completed ? Icons.check : Icons.check_rounded,
 
-                    color: completed ? Colors.white : Colors.grey.shade500,
+                    color: completed
+                        ? Colors.white
+                        : (isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade500),
 
                     size: 23,
                   ),

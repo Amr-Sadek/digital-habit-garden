@@ -800,9 +800,14 @@ class _GardenScreenState extends State<GardenScreen> {
   // ============================================================
 
   Widget _buildGrowthCard(Habit habit) {
-    final progress = (habit.currentStreak / 7).clamp(0.0, 1.0);
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isArabic = strings.isArabic;
+
+    final stageProgress = StageProgress.calculate(habit.currentStreak);
+    final nextStageTitle = _getStageTitle(
+      stageProgress.nextStageNameKey,
+      isArabic,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -855,14 +860,10 @@ class _GardenScreenState extends State<GardenScreen> {
 
                 const SizedBox(height: 8),
 
-                LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 7,
-                  borderRadius: BorderRadius.circular(10),
-                  color: AppTheme.primaryColor,
-                  backgroundColor: isDark
-                      ? const Color(0xFF343D35)
-                      : Colors.grey.shade200,
+                _StageSegmentedProgressBar(
+                  progress: stageProgress,
+                  nextStageTitle: nextStageTitle,
+                  isArabic: isArabic,
                 ),
               ],
             ),
@@ -1258,6 +1259,199 @@ class _SunMoonToggle extends StatelessWidget {
                 ),
         ),
       ),
+    );
+  }
+}
+
+// ============================================================================
+// STAGE PROGRESS CALCULATOR & SEGMENTED BAR WIDGET
+// ============================================================================
+
+String _getStageTitle(String stageKey, bool isArabic) {
+  if (isArabic) {
+    switch (stageKey) {
+      case 'seed':
+        return 'بذرة';
+      case 'sprout':
+        return 'برعم';
+      case 'young_plant':
+        return 'نبتة صغيرة';
+      case 'growing':
+        return 'نامية';
+      case 'strong_plant':
+        return 'نبتة قوية';
+      case 'mature':
+        return 'ناضجة';
+      case 'blooming':
+        return 'مزدهرة';
+      case 'fully_grown':
+        return 'مكتملة النمو';
+      default:
+        return 'برعم';
+    }
+  }
+
+  switch (stageKey) {
+    case 'seed':
+      return 'Seed';
+    case 'sprout':
+      return 'Sprout';
+    case 'young_plant':
+      return 'Young Plant';
+    case 'growing':
+      return 'Growing';
+    case 'strong_plant':
+      return 'Strong Plant';
+    case 'mature':
+      return 'Mature';
+    case 'blooming':
+      return 'Blooming';
+    case 'fully_grown':
+      return 'Fully Grown';
+    default:
+      return 'Sprout';
+  }
+}
+
+class StageProgress {
+  final int totalSegments;
+  final int filledSegments;
+  final int daysRemaining;
+  final String nextStageNameKey;
+
+  const StageProgress({
+    required this.totalSegments,
+    required this.filledSegments,
+    required this.daysRemaining,
+    required this.nextStageNameKey,
+  });
+
+  static StageProgress calculate(int streak) {
+    if (streak == 0) {
+      return const StageProgress(
+        totalSegments: 1,
+        filledSegments: 0,
+        daysRemaining: 1,
+        nextStageNameKey: 'sprout',
+      );
+    }
+
+    if (streak >= 31) {
+      return const StageProgress(
+        totalSegments: 5,
+        filledSegments: 5,
+        daysRemaining: 0,
+        nextStageNameKey: 'fully_grown',
+      );
+    }
+
+    final stageIndex = (streak - 1) ~/ 5;
+    final dayInStage = ((streak - 1) % 5) + 1; // 1..5
+
+    String nextStage;
+    switch (stageIndex) {
+      case 0:
+        nextStage = 'young_plant';
+        break;
+      case 1:
+        nextStage = 'growing';
+        break;
+      case 2:
+        nextStage = 'strong_plant';
+        break;
+      case 3:
+        nextStage = 'mature';
+        break;
+      case 4:
+        nextStage = 'blooming';
+        break;
+      default:
+        nextStage = 'fully_grown';
+        break;
+    }
+
+    final remaining = 5 - dayInStage + 1;
+
+    return StageProgress(
+      totalSegments: 5,
+      filledSegments: dayInStage,
+      daysRemaining: remaining > 0 ? remaining : 1,
+      nextStageNameKey: nextStage,
+    );
+  }
+}
+
+class _StageSegmentedProgressBar extends StatelessWidget {
+  final StageProgress progress;
+  final String nextStageTitle;
+  final bool isArabic;
+
+  const _StageSegmentedProgressBar({
+    required this.progress,
+    required this.nextStageTitle,
+    required this.isArabic,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final filledColor = AppTheme.primaryColor;
+    final emptyColor = isDark ? const Color(0xFF343D35) : Colors.grey.shade300;
+
+    final arrowIcon = Directionality(
+      textDirection: TextDirection.ltr,
+      child: Icon(
+        isArabic
+            ? Icons.keyboard_arrow_left_rounded
+            : Icons.keyboard_arrow_right_rounded,
+        size: 22,
+        color: progress.filledSegments > 0
+            ? AppTheme.primaryColor
+            : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: List.generate(progress.totalSegments, (index) {
+                  final isFilled = index < progress.filledSegments;
+                  return Expanded(
+                    child: Container(
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                      decoration: BoxDecoration(
+                        color: isFilled ? filledColor : emptyColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const SizedBox(width: 2),
+            arrowIcon,
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          progress.daysRemaining == 0
+              ? (isArabic ? 'مكتمل النمو! 🌟' : 'Fully Grown! 🌟')
+              : (isArabic
+                    ? 'باقي ${progress.daysRemaining} ${progress.daysRemaining == 1 ? "يوم" : "أيام"} للوصول لـ $nextStageTitle'
+                    : '${progress.daysRemaining} ${progress.daysRemaining == 1 ? "day" : "days"} to $nextStageTitle'),
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? AppTheme.darkSecondaryText : Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -93,9 +93,15 @@ class AppTheme {
 
         indicatorColor: secondaryColor.withValues(alpha: 0.35),
 
-        labelTextStyle: WidgetStateProperty.all(
-          const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+          return TextStyle(
+            color: textColor,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            overflow: TextOverflow.ellipsis,
+          );
+        }),
       ),
 
       // ========================================================
@@ -257,9 +263,15 @@ class AppTheme {
 
         indicatorColor: primaryColor.withValues(alpha: 0.35),
 
-        labelTextStyle: WidgetStateProperty.all(
-          const TextStyle(color: darkText, fontWeight: FontWeight.w600),
-        ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+          return TextStyle(
+            color: darkText,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            overflow: TextOverflow.ellipsis,
+          );
+        }),
 
         iconTheme: WidgetStateProperty.all(
           const IconThemeData(color: darkText),

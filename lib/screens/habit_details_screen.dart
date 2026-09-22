@@ -92,6 +92,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
         habitName: widget.habit.name,
         hour: selectedTime.hour,
         minute: selectedTime.minute,
+        skipToday: widget.habit.isCompletedToday,
       );
 
       if (!mounted) {
@@ -347,8 +348,6 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
 
     final completedToday = _completedToday;
 
-    final growthProgress = habit.plantGrowthProgress;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -454,48 +453,6 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                   ),
 
                   const SizedBox(height: 20),
-
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            strings.plantGrowth,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-
-                        Text(
-                          '${(growthProgress * 100).round()}%',
-                          style: const TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: LinearProgressIndicator(
-                      value: growthProgress,
-                      minHeight: 8,
-                      backgroundColor: isDark
-                          ? const Color(0xFF303A31)
-                          : Colors.white,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppTheme.primaryColor,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -503,58 +460,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
             const SizedBox(height: 26),
 
             // ==================================================
-            // REMINDER
-            // ==================================================
-            Text(
-              strings.isArabic ? 'التذكير' : 'Reminder',
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-            ),
-
-            const SizedBox(height: 12),
-
-            _buildReminderCard(),
-
-            const SizedBox(height: 28),
-
-            // ==================================================
-            // STATISTICS
-            // ==================================================
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.local_fire_department_outlined,
-                    value: '$currentStreak',
-                    label: strings.currentStreak,
-                  ),
-                ),
-
-                const SizedBox(width: 10),
-
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.emoji_events_outlined,
-                    value: '$bestStreak',
-                    label: strings.bestStreak,
-                  ),
-                ),
-
-                const SizedBox(width: 10),
-
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.check_circle_outline,
-                    value: '$completedDays',
-                    label: strings.completed,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            // ==================================================
-            // TODAY
+            // TODAY (COMPLETE / NOT COMPLETED)
             // ==================================================
             Text(
               strings.today,
@@ -663,6 +569,57 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                   ),
                 ],
               ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // ==================================================
+            // REMINDER
+            // ==================================================
+            Text(
+              strings.isArabic ? 'التذكير' : 'Reminder',
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildReminderCard(),
+
+            const SizedBox(height: 28),
+
+            // ==================================================
+            // STATISTICS
+            // ==================================================
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.local_fire_department_outlined,
+                    value: '$currentStreak',
+                    label: strings.currentStreak,
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.emoji_events_outlined,
+                    value: '$bestStreak',
+                    label: strings.bestStreak,
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.check_circle_outline,
+                    value: '$completedDays',
+                    label: strings.completed,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 28),
