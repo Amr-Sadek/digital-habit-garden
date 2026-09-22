@@ -285,6 +285,7 @@ class NotificationService {
     required String habitName,
     required int hour,
     required int minute,
+    bool skipToday = false,
   }) async {
     // ----------------------------------------------------------
     // Validate time.
@@ -319,6 +320,15 @@ class NotificationService {
     // ----------------------------------------------------------
 
     await cancelHabitReminder(habitId);
+
+    // ----------------------------------------------------------
+    // If habit is already completed today, cancel today's
+    // reminder completely so it does not trigger today.
+    // ----------------------------------------------------------
+
+    if (skipToday) {
+      return true;
+    }
 
     // ----------------------------------------------------------
     // Calculate next notification time.

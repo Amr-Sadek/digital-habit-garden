@@ -19,7 +19,7 @@ plugins {
 android {
     namespace = "com.amrsadek.digitalhabitgarden"
 
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
 
     // Required by the current plugins
     ndkVersion = "27.0.12077973"
@@ -40,7 +40,7 @@ android {
         applicationId = "com.amrsadek.digitalhabitgarden"
 
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
 
         versionCode = flutter.versionCode
         versionName = flutter.versionName

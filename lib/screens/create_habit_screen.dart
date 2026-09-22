@@ -164,6 +164,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
           habitName: habit.name,
           hour: _reminderTime!.hour,
           minute: _reminderTime!.minute,
+          skipToday: habit.isCompletedToday,
         );
       } else {
         habit.reminderHour = null;
@@ -219,6 +220,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         habitName: habit.name,
         hour: habit.reminderHour!,
         minute: habit.reminderMinute!,
+        skipToday: habit.isCompletedToday,
       );
     }
 
@@ -236,6 +238,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStringsScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final isEditing = widget.isEditing;
 
@@ -537,6 +540,30 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
                   final isSelected = _selectedPlant == plantType;
 
+                  final cardColor = isSelected && isUnlocked
+                      ? (isDark
+                            ? AppTheme.primaryColor.withValues(alpha: 0.25)
+                            : AppTheme.primaryColor.withValues(alpha: 0.12))
+                      : Theme.of(context).cardColor;
+
+                  final borderColor = isSelected && isUnlocked
+                      ? AppTheme.primaryColor
+                      : isDark
+                      ? Colors.grey.shade800
+                      : Colors.grey.shade300;
+
+                  final titleColor = !isUnlocked
+                      ? (isDark ? Colors.grey : Colors.grey.shade700)
+                      : (isDark ? Colors.white : AppTheme.textColor);
+
+                  final subtitleColor = !isUnlocked
+                      ? (isDark ? Colors.grey.shade500 : Colors.grey.shade600)
+                      : (isDark
+                            ? (isSelected
+                                  ? Colors.white70
+                                  : AppTheme.primaryColor)
+                            : AppTheme.primaryColor);
+
                   return GestureDetector(
                     onTap: isUnlocked
                         ? () {
@@ -547,20 +574,16 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                         : null,
 
                     child: Opacity(
-                      opacity: isUnlocked ? 1.0 : 0.55,
+                      opacity: isUnlocked ? 1.0 : 0.65,
 
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected && isUnlocked
-                              ? AppTheme.secondaryColor.withValues(alpha: 0.18)
-                              : Colors.white,
+                          color: cardColor,
 
                           borderRadius: BorderRadius.circular(18),
 
                           border: Border.all(
-                            color: isSelected && isUnlocked
-                                ? AppTheme.primaryColor
-                                : Colors.grey.shade300,
+                            color: borderColor,
 
                             width: isSelected && isUnlocked ? 2 : 1,
                           ),
@@ -578,7 +601,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
                                     color: isUnlocked
                                         ? AppTheme.primaryColor
-                                        : Colors.grey,
+                                        : (isDark
+                                              ? Colors.grey
+                                              : Colors.grey.shade600),
 
                                     size: 28,
                                   ),
@@ -600,11 +625,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
 
-                                          color: !isUnlocked
-                                              ? Colors.grey
-                                              : isSelected
-                                              ? Colors.white
-                                              : AppTheme.textColor,
+                                          color: titleColor,
                                         ),
                                       ),
 
@@ -613,22 +634,14 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                                       Text(
                                         plant['requiredStreak'] == 0
                                             ? strings.alwaysAvailable
-                                            : strings
-                                                  .streak(
-                                                    plant['requiredStreak']
-                                                        as int,
-                                                  )
-                                                  .replaceAll('🔥', '')
-                                                  .trim(),
+                                            : strings.streak(
+                                                plant['requiredStreak'] as int,
+                                              ),
 
                                         style: TextStyle(
                                           fontSize: 10,
 
-                                          color: !isUnlocked
-                                              ? Colors.grey.shade600
-                                              : isSelected
-                                              ? Colors.white70
-                                              : AppTheme.primaryColor,
+                                          color: subtitleColor,
 
                                           fontWeight: isSelected
                                               ? FontWeight.w600
@@ -642,14 +655,16 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                             ),
 
                             if (!isUnlocked)
-                              const Positioned(
+                              Positioned(
                                 top: 8,
                                 right: 8,
 
                                 child: Icon(
                                   Icons.lock_outline,
                                   size: 18,
-                                  color: Colors.grey,
+                                  color: isDark
+                                      ? Colors.grey
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                           ],

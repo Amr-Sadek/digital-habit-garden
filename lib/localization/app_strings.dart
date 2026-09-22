@@ -31,7 +31,7 @@ class AppStrings {
 
   String get progress => isArabic ? 'التقدم' : 'Progress';
 
-  String get profile => isArabic ? 'الملف الشخصي' : 'Profile';
+  String get profile => isArabic ? 'حسابي' : 'Profile';
 
   // ============================================================
   // APP
@@ -97,8 +97,7 @@ class AppStrings {
   String get createYourFirstHabit =>
       isArabic ? 'أنشئ أول عادة لك' : 'Create Your First Habit';
 
-  String streak(int days) =>
-      isArabic ? '🔥 سلسلة $days يوم' : '🔥 $days day streak';
+  String streak(int days) => isArabic ? 'سلسلة $days يوم' : '$days day streak';
 
   // ============================================================
   // HABITS

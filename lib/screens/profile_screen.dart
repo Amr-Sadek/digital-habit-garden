@@ -388,6 +388,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStringsScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -484,26 +486,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             autofocus: true,
                             textAlign: TextAlign.center,
                             textCapitalization: TextCapitalization.words,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppTheme.textColor,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
-                            cursorColor: Colors.white,
+                            cursorColor: isDark
+                                ? Colors.white
+                                : AppTheme.primaryColor,
                             decoration: InputDecoration(
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.20)
+                                  : Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               hintText: strings.yourName,
                               hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.6)
+                                    : Colors.grey.shade500,
                               ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
                               ),
-                              focusedBorder: const UnderlineInputBorder(
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: Colors.white,
-                                  width: 2,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppTheme.primaryColor,
+                                  width: 1.5,
                                 ),
                               ),
                             ),
@@ -517,16 +537,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: _saveEditedName,
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            width: 34,
-                            height: 34,
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.22)
+                                  : AppTheme.primaryColor,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check,
                               color: Colors.white,
-                              size: 19,
+                              size: 20,
                             ),
                           ),
                         ),
@@ -535,16 +557,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: _cancelEditingName,
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            width: 34,
-                            height: 34,
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.12)
+                                  : Colors.black.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.close,
-                              color: Colors.white,
-                              size: 19,
+                              color: isDark ? Colors.white : Colors.black87,
+                              size: 20,
                             ),
                           ),
                         ),
