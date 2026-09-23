@@ -4,6 +4,7 @@ import '../localization/app_strings.dart';
 import '../models/habit.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/plant_widget.dart';
 
 class HabitDetailsScreen extends StatefulWidget {
   final Habit habit;
@@ -366,7 +367,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
             // ==================================================
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -378,7 +379,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: AppTheme.primaryColor.withValues(
                     alpha: isDark ? .22 : .12,
@@ -387,72 +388,58 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
               ),
               child: Column(
                 children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFFE8F0E7) : Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        habit.plantImagePath,
-                        width: 95,
-                        height: 95,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+                  SizedBox(
+                    height: 80,
+                    child: PlantWidget(habit: habit, size: 75),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
 
                   Text(
                     habit.name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 26,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
 
                   if (habit.description.isNotEmpty) ...[
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 5),
 
                     Text(
                       habit.description,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: secondaryTextColor,
-                        fontSize: 14,
-                        height: 1.4,
+                        fontSize: 13,
+                        height: 1.3,
                       ),
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 8,
+                      horizontal: 14,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withValues(
-                        alpha: isDark ? .18 : .10,
+                        alpha: isDark ? .20 : .12,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
                       _stageName(habit.plantStage, strings.isArabic),
                       style: const TextStyle(
                         color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 20),
                 ],
               ),
             ),

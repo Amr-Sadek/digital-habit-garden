@@ -21,6 +21,7 @@ class GardenScreen extends StatefulWidget {
   final Future<void> Function(Habit habit) onToggleHabit;
   final Future<void> Function(Habit habit) onEditHabit;
   final Future<void> Function(Habit habit) onDeleteHabit;
+  final Future<void> Function(Habit habit)? onOpenHabitDetails;
 
   const GardenScreen({
     super.key,
@@ -30,6 +31,7 @@ class GardenScreen extends StatefulWidget {
     required this.onToggleHabit,
     required this.onEditHabit,
     required this.onDeleteHabit,
+    this.onOpenHabitDetails,
   });
 
   @override
@@ -811,64 +813,72 @@ class _GardenScreenState extends State<GardenScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? const Color(0xFF344035) : const Color(0xFFE4EAE1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onOpenHabitDetails != null
+              ? () => widget.onOpenHabitDetails!(habit)
+              : null,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF263A28) : const Color(0xFFEAF4E7),
-              shape: BoxShape.circle,
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF344035)
+                    : const Color(0xFFE4EAE1),
+              ),
             ),
-            alignment: Alignment.center,
-            child: PlantWidget(habit: habit, size: 40),
-          ),
-
-          const SizedBox(width: 13),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  habit.name,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                SizedBox(
+                  width: 50,
+                  height: 50,
+                  child: Center(child: PlantWidget(habit: habit, size: 44)),
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(width: 12),
 
-                Text(
-                  strings.stageStreak(
-                    strings.stageName(_stageName(habit)),
-                    habit.currentStreak,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        habit.name,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        strings.stageStreak(
+                          strings.stageName(_stageName(habit)),
+                          habit.currentStreak,
+                        ),
+                        style: TextStyle(
+                          color: isDark
+                              ? AppTheme.darkSecondaryText
+                              : Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      _StageSegmentedProgressBar(
+                        progress: stageProgress,
+                        nextStageTitle: nextStageTitle,
+                        isArabic: isArabic,
+                      ),
+                    ],
                   ),
-                  style: TextStyle(
-                    color: isDark
-                        ? AppTheme.darkSecondaryText
-                        : Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                _StageSegmentedProgressBar(
-                  progress: stageProgress,
-                  nextStageTitle: nextStageTitle,
-                  isArabic: isArabic,
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

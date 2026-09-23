@@ -329,6 +329,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onToggleHabit: _toggleHabit,
         onEditHabit: _openEditHabit,
         onDeleteHabit: _deleteHabit,
+        onOpenHabitDetails: _openHabitDetails,
       ),
 
       // ========================================================

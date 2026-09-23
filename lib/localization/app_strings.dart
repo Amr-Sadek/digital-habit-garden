@@ -33,6 +33,16 @@ class AppStrings {
 
   String get profile => isArabic ? 'حسابي' : 'Profile';
 
+  String get filterAll => isArabic ? 'الكل' : 'All';
+
+  String get filterPending => isArabic ? 'المتبقية' : 'Pending';
+
+  String get filterCompleted => isArabic ? 'المكتملة' : 'Completed';
+
+  String get motivationalTip => isArabic
+      ? 'الخطوات اليومية المستمرة تبني نتائج عظيمة 🌱'
+      : 'Small daily actions build great results 🌱';
+
   // ============================================================
   // APP
   // ============================================================
