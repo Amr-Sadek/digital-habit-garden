@@ -50,8 +50,6 @@ class HomeScreen extends StatelessWidget {
 
     final progress = habits.isEmpty ? 0.0 : completedToday / habits.length;
 
-    final percentage = (progress * 100).round();
-
     final strings = AppStringsScope.of(context);
 
     return Scaffold(
@@ -176,13 +174,21 @@ class HomeScreen extends StatelessWidget {
                         ),
 
                         child: Center(
-                          child: Text(
-                            '$percentage%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0.0, end: progress),
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animVal, child) {
+                              final pct = (animVal * 100).round();
+                              return Text(
+                                '$pct%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -217,19 +223,23 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 9),
 
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 9,
-
-                      backgroundColor: Colors.white.withValues(alpha: 0.22),
-
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.white,
-                      ),
-                    ),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: progress),
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animVal, child) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: LinearProgressIndicator(
+                          value: animVal,
+                          minHeight: 9,
+                          backgroundColor: Colors.white.withValues(alpha: 0.22),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -566,45 +576,49 @@ class _HabitCard extends StatelessWidget {
               const SizedBox(width: 8),
 
               // ======================================================
-              // COMPLETE BUTTON
+              // COMPLETE BUTTON WITH BOUNCE & SCALE ANIMATION
               // ======================================================
               GestureDetector(
                 onTap: onToggle,
 
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-
-                  width: 46,
-                  height: 46,
-
-                  decoration: BoxDecoration(
-                    color: completed
-                        ? AppTheme.primaryColor
-                        : Colors.transparent,
-
-                    shape: BoxShape.circle,
-
-                    border: Border.all(
+                child: AnimatedScale(
+                  scale: completed ? 1.05 : 1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
                       color: completed
                           ? AppTheme.primaryColor
-                          : (isDark
-                                ? Colors.grey.shade600
-                                : Colors.grey.shade300),
-
-                      width: 1.5,
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: completed
+                            ? AppTheme.primaryColor
+                            : (isDark
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade300),
+                        width: 1.5,
+                      ),
                     ),
-                  ),
-
-                  child: Icon(
-                    completed ? Icons.check : Icons.check_rounded,
-
-                    color: completed
-                        ? Colors.white
-                        : (isDark
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade500),
-
-                    size: 23,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, anim) =>
+                          ScaleTransition(scale: anim, child: child),
+                      child: Icon(
+                        completed ? Icons.check_rounded : Icons.circle_outlined,
+                        key: ValueKey(completed),
+                        color: completed
+                            ? Colors.white
+                            : (isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade500),
+                        size: completed ? 26 : 23,
+                      ),
+                    ),
                   ),
                 ),
               ),

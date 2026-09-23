@@ -286,77 +286,100 @@ class _GardenScreenState extends State<GardenScreen> {
   // ============================================================
 
   Widget _buildHeader(int completed, double completion, int bestStreak) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardColor = Theme.of(context).cardColor;
+    final secondaryTextColor = isDark
+        ? AppTheme.darkSecondaryText
+        : Colors.grey.shade600;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2F7D4A), Color(0xFF68A95D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? const Color(0xFF344035) : const Color(0xFFE4EAE1),
         ),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x223E7C4A),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            strings.yourGarden,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 27,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-
-          const SizedBox(height: 5),
-
-          Text(
-            strings.gardenGrowDescription,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: .78),
-              fontSize: 13.5,
-            ),
-          ),
-
-          const SizedBox(height: 18),
-
           Row(
             children: [
-              _headerStat('${widget.habits.length}', strings.growingPlants),
-              _headerDivider(),
-              _headerStat('$completed/${widget.habits.length}', strings.today),
-              _headerDivider(),
-              _headerStat('$bestStreak', strings.bestStreak),
+              Expanded(
+                child: Text(
+                  strings.yourGarden,
+                  style: TextStyle(
+                    color: isDark ? AppTheme.darkText : AppTheme.textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(
+                    alpha: isDark ? .20 : .12,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${(completion * 100).round()}%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: LinearProgressIndicator(
-              value: completion,
-              minHeight: 7,
-              backgroundColor: Colors.white.withValues(alpha: .20),
-              color: Colors.white,
-            ),
+          Row(
+            children: [
+              _headerStat(
+                '${widget.habits.length}',
+                strings.growingPlants,
+                isDark,
+                secondaryTextColor,
+              ),
+              _headerDivider(isDark),
+              _headerStat(
+                '$completed/${widget.habits.length}',
+                strings.today,
+                isDark,
+                secondaryTextColor,
+              ),
+              _headerDivider(isDark),
+              _headerStat(
+                '$bestStreak',
+                strings.bestStreak,
+                isDark,
+                secondaryTextColor,
+              ),
+            ],
           ),
 
-          const SizedBox(height: 7),
+          const SizedBox(height: 12),
 
-          Text(
-            strings.habitsCompleted(completed, widget.habits.length),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: .72),
-              fontSize: 11.5,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: completion,
+              minHeight: 5,
+              backgroundColor: isDark
+                  ? const Color(0xFF343D35)
+                  : Colors.grey.shade200,
+              color: AppTheme.primaryColor,
             ),
           ),
         ],
@@ -364,16 +387,21 @@ class _GardenScreenState extends State<GardenScreen> {
     );
   }
 
-  Widget _headerStat(String value, String label) {
+  Widget _headerStat(
+    String value,
+    String label,
+    bool isDark,
+    Color secondaryTextColor,
+  ) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 19,
+            style: TextStyle(
+              color: isDark ? AppTheme.darkText : AppTheme.textColor,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -381,8 +409,9 @@ class _GardenScreenState extends State<GardenScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: .68),
-              fontSize: 10.5,
+              color: secondaryTextColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -390,12 +419,12 @@ class _GardenScreenState extends State<GardenScreen> {
     );
   }
 
-  Widget _headerDivider() {
+  Widget _headerDivider(bool isDark) {
     return Container(
       width: 1,
-      height: 32,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      color: Colors.white.withValues(alpha: .18),
+      height: 28,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: isDark ? const Color(0xFF344035) : Colors.grey.shade300,
     );
   }
 
@@ -1380,12 +1409,12 @@ class StageProgress {
         break;
     }
 
-    final remaining = 5 - dayInStage + 1;
+    final remaining = 5 - dayInStage;
 
     return StageProgress(
       totalSegments: 5,
       filledSegments: dayInStage,
-      daysRemaining: remaining > 0 ? remaining : 1,
+      daysRemaining: remaining,
       nextStageNameKey: nextStage,
     );
   }
@@ -1451,9 +1480,18 @@ class _StageSegmentedProgressBar extends StatelessWidget {
         const SizedBox(height: 5),
         Text(
           progress.daysRemaining == 0
-              ? (isArabic ? 'مكتمل النمو! 🌟' : 'Fully Grown! 🌟')
+              ? (progress.filledSegments == 5 &&
+                        progress.nextStageNameKey != 'fully_grown'
+                    ? (isArabic
+                          ? 'يوم واحد ويتم التطوير لـ $nextStageTitle 🚀'
+                          : '1 day to $nextStageTitle 🚀')
+                    : (isArabic ? 'مكتمل النمو! 🌟' : 'Fully Grown! 🌟'))
               : (isArabic
-                    ? 'باقي ${progress.daysRemaining} ${progress.daysRemaining == 1 ? "يوم" : "أيام"} للوصول لـ $nextStageTitle'
+                    ? 'باقي ${progress.daysRemaining} ${progress.daysRemaining == 1
+                          ? "يوم"
+                          : progress.daysRemaining == 2
+                          ? "يومان"
+                          : "أيام"} للوصول لـ $nextStageTitle'
                     : '${progress.daysRemaining} ${progress.daysRemaining == 1 ? "day" : "days"} to $nextStageTitle'),
           style: TextStyle(
             fontSize: 11,

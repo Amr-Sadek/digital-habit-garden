@@ -391,14 +391,27 @@ class _HabitsScreenState extends State<HabitsScreen> {
               if (!_isReordering) ...[
                 IconButton(
                   onPressed: () => widget.onToggleHabit(habit),
-                  icon: Icon(
-                    habit.isCompletedToday
-                        ? Icons.check_circle
-                        : Icons.circle_outlined,
-                    color: habit.isCompletedToday
-                        ? AppTheme.primaryColor
-                        : Colors.grey,
-                    size: 26,
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutBack,
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: Icon(
+                      habit.isCompletedToday
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      key: ValueKey(habit.isCompletedToday),
+                      color: habit.isCompletedToday
+                          ? AppTheme.primaryColor
+                          : Colors.grey,
+                      size: 26,
+                    ),
                   ),
                 ),
 
