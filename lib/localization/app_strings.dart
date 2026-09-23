@@ -19,6 +19,34 @@ class AppStrings {
 
   String get edit => isArabic ? 'تعديل' : 'Edit';
 
+  String get skip => isArabic ? 'تخطي' : 'Skip';
+
+  String get next => isArabic ? 'التالي' : 'Next';
+
+  String get getStarted => isArabic ? 'ابدأ الآن 🚀' : 'Get Started 🚀';
+
+  String get onboardingTitle1 =>
+      isArabic ? 'ازرع عاداتك كحديقة رقمية 🌱' : 'Grow Habits Like a Garden 🌱';
+
+  String get onboardingDesc1 => isArabic
+      ? 'حوّل عاداتك اليومية لنباتات حية تنمو وتزدهر مع كل يوم تلتزم فيه بالاستمرارية.'
+      : 'Transform your daily habits into virtual plants that grow and thrive every day you stay consistent.';
+
+  String get onboardingTitle2 => isArabic
+      ? 'حافظ على سلسلتك وتذكيراتك 🔥'
+      : 'Build Streaks & Stay Consistent 🔥';
+
+  String get onboardingDesc2 => isArabic
+      ? 'تلقَّ تذكيرات ذكية في مواعيدك، واحفظ سلسلتك متواصلة دون انقطاع لتطوير نفسك.'
+      : 'Receive smart timely reminders, protect your daily streaks, and celebrate every habit milestone.';
+
+  String get onboardingTitle3 =>
+      isArabic ? 'حديقتك بأسلوبك الخاص ☀️🌙' : 'Personalize Your Garden ☀️🌙';
+
+  String get onboardingDesc3 => isArabic
+      ? 'استمتع بالتحويل بين خلفيات النهار والليل ودعم كامل للنمط الداكن والمضيء.'
+      : 'Switch between morning and night garden themes with seamless light and dark mode support.';
+
   // ============================================================
   // NAVIGATION
   // ============================================================
