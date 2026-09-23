@@ -7,16 +7,16 @@ class AppController extends ChangeNotifier {
   static final AppController instance = AppController._();
 
   static const String _themeKey = 'app_theme_mode';
-
   static const String _languageKey = 'app_language';
+  static const String _onboardingKey = 'has_completed_onboarding';
 
   ThemeMode _themeMode = ThemeMode.system;
-
   Locale _locale = const Locale('en');
+  bool _hasCompletedOnboarding = false;
 
   ThemeMode get themeMode => _themeMode;
-
   Locale get locale => _locale;
+  bool get hasCompletedOnboarding => _hasCompletedOnboarding;
 
   // ============================================================
   // LOAD SETTINGS
@@ -26,8 +26,8 @@ class AppController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     final savedTheme = prefs.getString(_themeKey);
-
     final savedLanguage = prefs.getString(_languageKey);
+    _hasCompletedOnboarding = prefs.getBool(_onboardingKey) ?? false;
 
     // -------------------------
     // THEME
@@ -47,18 +47,35 @@ class AppController extends ChangeNotifier {
     }
 
     // -------------------------
-    // LANGUAGE
+    // LANGUAGE (Auto-detect system locale if first launch)
     // -------------------------
 
-    switch (savedLanguage) {
-      case 'ar':
-        _locale = const Locale('ar');
-        break;
+    if (savedLanguage == null) {
+      final systemLang =
+          WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+      _locale = systemLang == 'ar' ? const Locale('ar') : const Locale('en');
+    } else {
+      switch (savedLanguage) {
+        case 'ar':
+          _locale = const Locale('ar');
+          break;
 
-      default:
-        _locale = const Locale('en');
+        default:
+          _locale = const Locale('en');
+      }
     }
 
+    notifyListeners();
+  }
+
+  // ============================================================
+  // COMPLETE ONBOARDING
+  // ============================================================
+
+  Future<void> completeOnboarding() async {
+    _hasCompletedOnboarding = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingKey, true);
     notifyListeners();
   }
 
