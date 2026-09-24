@@ -1,8 +1,28 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
+import 'storage_service.dart';
+
+@pragma('vm:entry-point')
+void _onBackgroundNotificationResponse(NotificationResponse response) async {
+  if (response.actionId == 'action_complete_habit' &&
+      response.payload != null) {
+    WidgetsFlutterBinding.ensureInitialized();
+    final habitId = response.payload!;
+    final storage = StorageService();
+    final habits = await storage.loadHabits();
+    final index = habits.indexWhere((h) => h.id == habitId);
+    if (index != -1) {
+      habits[index].completeToday();
+      await storage.saveHabits(habits);
+      await NotificationService.instance.cancelHabitReminder(habitId);
+    }
+  }
+}
 
 class NotificationService {
   NotificationService._();
@@ -43,7 +63,27 @@ class NotificationService {
       android: androidSettings,
     );
 
-    await _notifications.initialize(settings: initializationSettings);
+    await _notifications.initialize(
+      settings: initializationSettings,
+      onDidReceiveNotificationResponse: _onNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:
+          _onBackgroundNotificationResponse,
+    );
+  }
+
+  void _onNotificationResponse(NotificationResponse response) async {
+    if (response.actionId == 'action_complete_habit' &&
+        response.payload != null) {
+      final habitId = response.payload!;
+      final storage = StorageService();
+      final habits = await storage.loadHabits();
+      final index = habits.indexWhere((h) => h.id == habitId);
+      if (index != -1) {
+        habits[index].completeToday();
+        await storage.saveHabits(habits);
+        await cancelHabitReminder(habitId);
+      }
+    }
   }
 
   // ============================================================
@@ -369,6 +409,14 @@ class NotificationService {
           : 'Individual reminders for your habits.',
       importance: Importance.high,
       priority: Priority.high,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'action_complete_habit',
+          isArabic ? 'تم الإنجاز ✓' : 'Complete Habit ✓',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+      ],
     );
 
     final notificationDetails = NotificationDetails(android: androidDetails);
@@ -390,6 +438,8 @@ class NotificationService {
         scheduledDate: scheduledDate,
 
         notificationDetails: notificationDetails,
+
+        payload: habitId,
 
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
 

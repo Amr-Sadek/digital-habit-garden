@@ -785,15 +785,24 @@ class _GardenScreenState extends State<GardenScreen> {
         final selected = index == _currentGardenPage;
 
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: selected ? 20 : 7,
-          height: 7,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          width: selected ? 24 : 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: selected
                 ? AppTheme.primaryColor
-                : Colors.white.withValues(alpha: .65),
+                : Colors.white.withValues(alpha: .75),
             borderRadius: BorderRadius.circular(20),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                    ),
+                  ]
+                : null,
           ),
         );
       }),

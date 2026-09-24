@@ -5,10 +5,62 @@ import '../models/habit.dart';
 import '../theme/app_theme.dart';
 import '../widgets/plant_widget.dart';
 
-class ProgressScreen extends StatelessWidget {
+class ProgressScreen extends StatefulWidget {
   final List<Habit> habits;
+  final bool isSelected;
 
-  const ProgressScreen({super.key, required this.habits});
+  const ProgressScreen({
+    super.key,
+    required this.habits,
+    this.isSelected = true,
+  });
+
+  @override
+  State<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends State<ProgressScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _animation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+
+    if (widget.isSelected) {
+      _animController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ProgressScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Replay animation ONLY when navigating from another tab to Progress tab,
+    // or if the habits data list actually changed.
+    final becameSelected = !oldWidget.isSelected && widget.isSelected;
+    final habitsChanged = !identical(oldWidget.habits, widget.habits);
+
+    if ((becameSelected || habitsChanged) && widget.isSelected) {
+      _animController.reset();
+      _animController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   // ============================================================
   // DATE FORMAT
@@ -26,15 +78,13 @@ class ProgressScreen extends StatelessWidget {
 
   List<_DayData> _getWeeklyData() {
     final today = DateTime.now();
-
     final todayDate = DateTime(today.year, today.month, today.day);
 
     return List.generate(7, (index) {
       final date = todayDate.subtract(Duration(days: 6 - index));
-
       int completed = 0;
 
-      for (final habit in habits) {
+      for (final habit in widget.habits) {
         if (habit.completedDates.contains(_formatDate(date))) {
           completed++;
         }
@@ -54,14 +104,12 @@ class ProgressScreen extends StatelessWidget {
     }
 
     final today = DateTime.now();
-
     final todayDate = DateTime(today.year, today.month, today.day);
 
     int completedDays = 0;
 
     for (int i = 0; i < 7; i++) {
       final date = todayDate.subtract(Duration(days: i));
-
       if (habit.completedDates.contains(_formatDate(date))) {
         completedDays++;
       }
@@ -77,8 +125,9 @@ class ProgressScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppStringsScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (habits.isEmpty) {
+    if (widget.habits.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(strings.myProgress)),
         body: _buildEmptyState(context),
@@ -89,7 +138,7 @@ class ProgressScreen extends StatelessWidget {
     int totalCompleted = 0;
     int bestStreak = 0;
 
-    for (final habit in habits) {
+    for (final habit in widget.habits) {
       if (habit.isCompletedToday) {
         completedToday++;
       }
@@ -101,8 +150,7 @@ class ProgressScreen extends StatelessWidget {
       }
     }
 
-    final progress = completedToday / habits.length;
-
+    final progress = completedToday / widget.habits.length;
     final weeklyData = _getWeeklyData();
 
     final weeklyCompleted = weeklyData.fold<int>(
@@ -110,8 +158,7 @@ class ProgressScreen extends StatelessWidget {
       (sum, day) => sum + day.completed,
     );
 
-    final totalPossible = habits.length * 7;
-
+    final totalPossible = widget.habits.length * 7;
     final weeklyProgress = totalPossible == 0
         ? 0.0
         : weeklyCompleted / totalPossible;
@@ -127,362 +174,355 @@ class ProgressScreen extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            final animVal = _animation.value;
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ==================================================
+                // HEADER
+                // ==================================================
+                Text(
+                  strings.yourProgress,
+                  style: const TextStyle(
+                    fontSize: 29,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
 
-          children: [
-            // ==================================================
-            // HEADER
-            // ==================================================
-            Text(
-              strings.yourProgress,
-              style: const TextStyle(fontSize: 29, fontWeight: FontWeight.w800),
-            ),
+                const SizedBox(height: 6),
 
-            const SizedBox(height: 6),
+                Text(
+                  strings.progressSubtitle,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppTheme.darkSecondaryText
+                        : Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
 
-            Text(
-              strings.progressSubtitle,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
+                const SizedBox(height: 25),
 
-            const SizedBox(height: 25),
+                // ==================================================
+                // TODAY OVERVIEW CARD WITH SMOOTH ENTRANCE ANIMATION
+                // ==================================================
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.primaryColor.withValues(alpha: 0.80),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.20),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.todaysProgress,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
 
-            // ==================================================
-            // TODAY OVERVIEW
-            // ==================================================
-            Container(
-              width: double.infinity,
+                            const SizedBox(height: 6),
 
-              padding: const EdgeInsets.all(22),
+                            Text(
+                              strings.habitsCompleted(
+                                completedToday,
+                                widget.habits.length,
+                              ),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 13,
+                              ),
+                            ),
 
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                            const SizedBox(height: 18),
 
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.primaryColor.withValues(alpha: 0.80),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: LinearProgressIndicator(
+                                value: progress * animVal,
+                                minHeight: 9,
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.20,
+                                ),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 20),
+
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.15),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.30),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${(progress * animVal * 100).round()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+
+                // ==================================================
+                // SUMMARY CARDS
+                // ==================================================
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SmallProgressCard(
+                        title: strings.today,
+                        value: '$completedToday/${widget.habits.length}',
+                        icon: Icons.today_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SmallProgressCard(
+                        title: strings.bestStreak,
+                        value: strings.bestStreakDays(bestStreak),
+                        icon: Icons.local_fire_department_outlined,
+                      ),
+                    ),
                   ],
                 ),
 
-                borderRadius: BorderRadius.circular(25),
+                const SizedBox(height: 12),
 
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.20),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-
-                      children: [
-                        Text(
-                          strings.todaysProgress,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          strings.habitsCompleted(
-                            completedToday,
-                            habits.length,
-                          ),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 13,
-                          ),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 9,
-
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.20,
-                            ),
-
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 20),
-
-                  Container(
-                    width: 72,
-                    height: 72,
-
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-
-                      color: Colors.white.withValues(alpha: 0.15),
-
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.30),
-                      ),
-                    ),
-
-                    child: Center(
-                      child: Text(
-                        '${(progress * 100).round()}%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // ==================================================
-            // SUMMARY CARDS
-            // ==================================================
-            Row(
-              children: [
-                Expanded(
-                  child: _SmallProgressCard(
-                    title: strings.today,
-                    value: '$completedToday/${habits.length}',
-                    icon: Icons.today_outlined,
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: _SmallProgressCard(
-                    title: strings.bestStreak,
-                    value: strings.bestStreakDays(bestStreak),
-                    icon: Icons.local_fire_department_outlined,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _SmallProgressCard(
-                    title: strings.completed,
-                    value: '$totalCompleted',
-                    icon: Icons.check_circle_outline,
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: _SmallProgressCard(
-                    title: strings.habits,
-                    value: '${habits.length}',
-                    icon: Icons.local_florist_outlined,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            // ==================================================
-            // WEEKLY ACTIVITY
-            // ==================================================
-            Text(
-              strings.weeklyActivity,
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-            ),
-
-            const SizedBox(height: 12),
-
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-
-                child: Column(
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Expanded(
+                      child: _SmallProgressCard(
+                        title: strings.completed,
+                        value: '$totalCompleted',
+                        icon: Icons.check_circle_outline,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SmallProgressCard(
+                        title: strings.habits,
+                        value: '${widget.habits.length}',
+                        icon: Icons.local_florist_outlined,
+                      ),
+                    ),
+                  ],
+                ),
 
+                const SizedBox(height: 30),
+
+                // ==================================================
+                // WEEKLY ACTIVITY
+                // ==================================================
+                Text(
+                  strings.weeklyActivity,
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    strings.thisWeek,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    strings.weeklyCheckins(weeklyCompleted),
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? AppTheme.darkSecondaryText
+                                          : Colors.grey.shade600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '${(weeklyProgress * animVal * 100).round()}%',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        // ==================================================
+                        // WEEKLY CHART
+                        // ==================================================
+                        SizedBox(
+                          height: 180,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: weeklyData.map((day) {
+                              return Expanded(
+                                child: _DayBar(
+                                  day: day,
+                                  maxValue: widget.habits.length,
+                                  animVal: animVal,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ==================================================
+                        // BEST DAY
+                        // ==================================================
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: isDark ? .18 : .08,
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                strings.thisWeek,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(
+                                    alpha: .12,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.emoji_events_outlined,
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                strings.weeklyCheckins(weeklyCompleted),
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 13,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      strings.bestDay,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      strings.bestDayValue(
+                                        strings.dayName(bestDay.date.weekday),
+                                        bestDay.completed,
+                                      ),
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? AppTheme.darkSecondaryText
+                                            : Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-
-                        Text(
-                          '${(weeklyProgress * 100).round()}%',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
                       ],
                     ),
-
-                    const SizedBox(height: 25),
-
-                    // ==================================================
-                    // WEEKLY CHART
-                    // ==================================================
-                    SizedBox(
-                      height: 180,
-
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-
-                        children: weeklyData.map((day) {
-                          return Expanded(
-                            child: _DayBar(day: day, maxValue: habits.length),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ==================================================
-                    // BEST DAY
-                    // ==================================================
-                    Container(
-                      width: double.infinity,
-
-                      padding: const EdgeInsets.all(13),
-
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(
-                                alpha: 0.12,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-
-                            child: const Icon(
-                              Icons.emoji_events_outlined,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-
-                              children: [
-                                Text(
-                                  strings.bestDay,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 3),
-
-                                Text(
-                                  strings.bestDayValue(
-                                    strings.dayName(bestDay.date.weekday),
-                                    bestDay.completed,
-                                  ),
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-            // ==================================================
-            // HABIT PERFORMANCE
-            // ==================================================
-            Text(
-              strings.habitPerformance,
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-            ),
+                // ==================================================
+                // HABIT PERFORMANCE
+                // ==================================================
+                Text(
+                  strings.habitPerformance,
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
 
-            const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-            ...habits.map((habit) {
-              return _HabitProgressCard(
-                habit: habit,
-                progress: _getHabitProgress(habit),
-              );
-            }),
+                ...widget.habits.map((habit) {
+                  return _HabitProgressCard(
+                    habit: habit,
+                    progress: _getHabitProgress(habit) * animVal,
+                  );
+                }),
 
-            const SizedBox(height: 10),
-          ],
+                const SizedBox(height: 10),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -498,20 +538,16 @@ class ProgressScreen extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30),
-
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
             Container(
               width: 100,
               height: 100,
-
               decoration: BoxDecoration(
                 color: AppTheme.secondaryColor.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
-
               child: const Center(
                 child: Text('🌱', style: TextStyle(fontSize: 55)),
               ),
@@ -568,8 +604,13 @@ class _DayData {
 class _DayBar extends StatelessWidget {
   final _DayData day;
   final int maxValue;
+  final double animVal;
 
-  const _DayBar({required this.day, required this.maxValue});
+  const _DayBar({
+    required this.day,
+    required this.maxValue,
+    this.animVal = 1.0,
+  });
 
   String _getDayName(BuildContext context, int weekday) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
@@ -642,7 +683,7 @@ class _DayBar extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               width: 25,
-              height: 115 * ratio,
+              height: 115 * ratio * animVal,
               decoration: BoxDecoration(
                 color: day.completed > 0
                     ? AppTheme.primaryColor
@@ -669,7 +710,6 @@ class _DayBar extends StatelessWidget {
               softWrap: false,
               textAlign: TextAlign.center,
               style: TextStyle(
-                // Arabic smaller because the full name is displayed
                 fontSize: isArabic ? 9 : 11,
                 fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                 color: isToday ? AppTheme.primaryColor : Colors.grey.shade600,

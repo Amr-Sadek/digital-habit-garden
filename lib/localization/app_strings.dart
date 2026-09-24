@@ -48,6 +48,154 @@ class AppStrings {
       : 'Switch between morning and night garden themes with seamless light and dark mode support.';
 
   // ============================================================
+  // ACHIEVEMENTS / BADGES (20 BADGES)
+  // ============================================================
+
+  String get achievementsTitle => isArabic ? 'أوسمة الحديقة' : 'Garden Badges';
+
+  String get achievementsSubtitle => isArabic
+      ? 'استمر في التزامك لاكتساب جميع أوسمة الحديقة'
+      : 'Keep your momentum to unlock all garden badges';
+
+  String badgesUnlockedCount(int unlocked, int total) => isArabic
+      ? '$unlocked من أصل $total مكتسبة 🏆'
+      : '$unlocked of $total Unlocked 🏆';
+
+  // 1
+  String get badgeFirstHabit => isArabic ? 'أول بذرة ☘️' : 'First Seed ☘️';
+  String get badgeFirstHabitDesc =>
+      isArabic ? 'إنشاء أول عادة لك بحديقتك.' : 'Created your first habit.';
+
+  // 2
+  String get badgeFirstSprout =>
+      isArabic ? 'البرعم الأول 🥇' : 'First Sprout 🥇';
+  String get badgeFirstSproutDesc =>
+      isArabic ? 'إكمال أول عادة لك بنجاح.' : 'Completed your first habit.';
+
+  // 3
+  String get badgePerfectDay => isArabic ? 'يوم المثالية ⭐' : 'Perfect Day ⭐';
+  String get badgePerfectDayDesc => isArabic
+      ? 'إكمال جميع عاداتك اليومية بالكامل اليوم.'
+      : 'Completed all your habits today.';
+
+  // 4
+  String get badgeEarlyBird => isArabic ? 'الطائر المبكر 🌅' : 'Early Bird 🌅';
+  String get badgeEarlyBirdDesc => isArabic
+      ? 'إكمال عادة قبل الساعة 9 صباحاً.'
+      : 'Completed a habit before 9:00 AM.';
+
+  // 5
+  String get badgeNightOwl => isArabic ? 'بومة الليل 🌙' : 'Night Owl 🌙';
+  String get badgeNightOwlDesc => isArabic
+      ? 'إكمال عادة بعد الساعة 9 مساءً.'
+      : 'Completed a habit after 9:00 PM.';
+
+  // 6
+  String get badge3DaySpark => isArabic ? 'شرارة البداية 🔥' : '3-Day Spark 🔥';
+  String get badge3DaySparkDesc => isArabic
+      ? 'الحفاظ على عادة لـ 3 أيام متواصلة.'
+      : 'Achieved a 3-day habit streak.';
+
+  // 7
+  String get badgeStreakMaster =>
+      isArabic ? 'خبير السلسلة ⚡' : 'Streak Master ⚡';
+  String get badgeStreakMasterDesc => isArabic
+      ? 'الحفاظ على عادة لمدة 7 أيام متواصلة.'
+      : 'Maintained a 7-day habit streak.';
+
+  // 8
+  String get badge2WeekWarrior =>
+      isArabic ? 'محارب الأسبوعين 🏅' : '2-Week Warrior 🏅';
+  String get badge2WeekWarriorDesc => isArabic
+      ? 'الحفاظ على عادة لمدة 14 يوماً متواصلة.'
+      : 'Maintained a 14-day habit streak.';
+
+  // 9
+  String get badgeMultiTasker =>
+      isArabic ? 'بستاني نشط 🌿' : 'Active Gardener 🌿';
+  String get badgeMultiTaskerDesc => isArabic
+      ? 'إدارة 3 عادات أو أكثر بحديقتك.'
+      : 'Active in 3 or more habits.';
+
+  // 10
+  String get badgeReminderSet =>
+      isArabic ? 'المنبه الذكي 🔔' : 'Smart Reminder 🔔';
+  String get badgeReminderSetDesc => isArabic
+      ? 'تفعيل التذكيرات اليومية لأحد عاداتك.'
+      : 'Set a daily reminder for a habit.';
+
+  // 11
+  String get badgeWeeklyHero =>
+      isArabic ? 'بطل الأسبوع 🗓️' : 'Weekly Hero 🗓️';
+  String get badgeWeeklyHeroDesc => isArabic
+      ? 'التزام بالعادة كل يوم في الأسبوع الماضي.'
+      : 'Completed habits every day this week.';
+
+  // 12
+  String get badgeCollector =>
+      isArabic ? 'جامع العادات 💎' : 'Habit Collector 💎';
+  String get badgeCollectorDesc => isArabic
+      ? 'إدارة 5 عادات أو أكثر بحديقتك.'
+      : 'Active in 5 or more habits.';
+
+  // 13
+  String get badgeFirstBloom => isArabic ? 'أول زهرة 🌸' : 'First Bloom 🌸';
+  String get badgeFirstBloomDesc => isArabic
+      ? 'تنمية نبتة لمرحلة الازدهار.'
+      : 'Grown a plant to Blooming stage.';
+
+  // 14
+  String get badgeThrivingGarden =>
+      isArabic ? 'الحديقة المزدهرة 🌳' : 'Thriving Garden 🌳';
+  String get badgeThrivingGardenDesc => isArabic
+      ? 'تنمية 3 نباتات لمرحلة متقدمة.'
+      : 'Grown 3 plants to advanced stage.';
+
+  // 15
+  String get badgeUnstoppable =>
+      isArabic ? 'البطل الخارق 🚀' : 'Unstoppable 🚀';
+  String get badgeUnstoppableDesc => isArabic
+      ? 'الوصول لسلسلة 30 يوماً متواصلة.'
+      : 'Achieved a 30-day habit streak.';
+
+  // 16
+  String get badgeCentury => isArabic ? 'مئوية العادات 💯' : 'Habit Century 💯';
+  String get badgeCenturyDesc => isArabic
+      ? 'إكمال 100 إنجاز عادة إجمالاً في السجل.'
+      : 'Completed 100 total habit check-ins.';
+
+  // 17
+  String get badge60DayTitan =>
+      isArabic ? 'عملاق الـ 60 يوماً 👑' : '60-Day Titan 👑';
+  String get badge60DayTitanDesc => isArabic
+      ? 'الوصول لسلسلة 60 يوماً متواصلة.'
+      : 'Achieved a 60-day habit streak.';
+
+  // 18
+  String get badgeMasterGardener =>
+      isArabic ? 'كبير البستانيين 🌟' : '100-Day Master 🌟';
+  String get badgeMasterGardenerDesc => isArabic
+      ? 'الوصول لسلسلة 100 يوم متواصلة.'
+      : 'Achieved a 100-day habit streak.';
+
+  // 19
+  String get badgeLegend => isArabic ? 'أسطورة العادات 🔮' : 'Habit Legend 🔮';
+  String get badgeLegendDesc => isArabic
+      ? 'إكمال 500 إنجاز عادة إجمالاً في السجل.'
+      : 'Completed 500 total habit check-ins.';
+
+  // 20
+  String get badgeForestCreator =>
+      isArabic ? 'صانع الغابة 🪴' : 'Forest Creator 🪴';
+  String get badgeForestCreatorDesc => isArabic
+      ? 'تنمية 5 نباتات لمرحلة اكتمال النمو.'
+      : 'Grown 5 plants to Fully Grown stage.';
+
+  String get unlocked => isArabic ? 'مكتسب 🏆' : 'Unlocked 🏆';
+
+  String get locked => isArabic ? 'مغلق 🔒' : 'Locked 🔒';
+
+  // ============================================================
   // NAVIGATION
   // ============================================================
 

@@ -335,7 +335,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // ========================================================
       // PROGRESS
       // ========================================================
-      ProgressScreen(habits: _habits),
+      ProgressScreen(habits: _habits, isSelected: _currentIndex == 3),
 
       // ========================================================
       // PROFILE
@@ -366,6 +366,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         selectedIndex: _currentIndex,
 
         onDestinationSelected: (index) {
+          if (_currentIndex == index) {
+            return;
+          }
           setState(() {
             _currentIndex = index;
           });
@@ -405,15 +408,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
 
       // ========================================================
-      // ADD HABIT BUTTON
+      // ADD HABIT BUTTON WITH PULSE ANIMATION
       // ========================================================
       floatingActionButton: _currentIndex == 0 || _currentIndex == 1
-          ? FloatingActionButton(
-              onPressed: _openCreateHabit,
-
-              backgroundColor: AppTheme.primaryColor,
-
-              child: const Icon(Icons.add, color: Colors.white),
+          ? TweenAnimationBuilder<double>(
+              key: ValueKey(_currentIndex),
+              tween: Tween<double>(begin: 0.85, end: 1.0),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.elasticOut,
+              builder: (context, val, child) {
+                return Transform.scale(
+                  scale: val,
+                  child: FloatingActionButton(
+                    onPressed: _openCreateHabit,
+                    backgroundColor: AppTheme.primaryColor,
+                    child: const Icon(Icons.add, color: Colors.white, size: 28),
+                  ),
+                );
+              },
             )
           : null,
     );
