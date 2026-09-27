@@ -20,7 +20,9 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late AnimationController _animController;
   late Animation<double> _animation;
 
@@ -124,6 +126,7 @@ class _ProgressScreenState extends State<ProgressScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final strings = AppStringsScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 

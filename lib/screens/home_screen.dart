@@ -5,11 +5,12 @@ import '../models/habit.dart';
 import '../theme/app_theme.dart';
 import '../widgets/plant_widget.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final List<Habit> habits;
   final Future<void> Function(Habit habit) onToggleHabit;
   final VoidCallback onAddHabit;
-  final Future<void> Function(Habit habit) onOpenHabitDetails;
+  final Future<void> Function(Habit habit, {String? heroTag})
+  onOpenHabitDetails;
 
   const HomeScreen({
     super.key,
@@ -18,6 +19,15 @@ class HomeScreen extends StatelessWidget {
     required this.onAddHabit,
     required this.onOpenHabitDetails,
   });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   // ============================================================
   // GREETING
@@ -44,6 +54,11 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+    final habits = widget.habits;
+    final onToggleHabit = widget.onToggleHabit;
+    final onAddHabit = widget.onAddHabit;
+    final onOpenHabitDetails = widget.onOpenHabitDetails;
     final completedToday = habits
         .where((habit) => habit.isCompletedToday)
         .length;
@@ -317,7 +332,10 @@ class HomeScreen extends StatelessWidget {
                   child: _HabitCard(
                     habit: habit,
                     onToggle: () => onToggleHabit(habit),
-                    onTap: () => onOpenHabitDetails(habit),
+                    onTap: () => onOpenHabitDetails(
+                      habit,
+                      heroTag: 'home_plant_${habit.id}',
+                    ),
                   ),
                 ),
               ),
@@ -417,11 +435,16 @@ class _HabitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final completed = habit.isCompletedToday;
+    final isTodayActive = habit.isTodayActive;
 
     final strings = AppStringsScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardColor = completed
+    final cardColor = !isTodayActive
+        ? (isDark
+              ? Theme.of(context).cardColor.withValues(alpha: 0.60)
+              : Colors.grey.shade100)
+        : completed
         ? (isDark
               ? AppTheme.primaryColor.withValues(alpha: 0.22)
               : AppTheme.secondaryColor.withValues(alpha: 0.10))
@@ -437,7 +460,9 @@ class _HabitCard extends StatelessWidget {
         ? (isDark ? Colors.grey.shade400 : Colors.grey.shade600)
         : (isDark ? Colors.white : Colors.black87);
 
-    final badgeBgColor = completed
+    final badgeBgColor = !isTodayActive
+        ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade200)
+        : completed
         ? (isDark
               ? AppTheme.primaryColor.withValues(alpha: 0.25)
               : AppTheme.primaryColor.withValues(alpha: 0.10))
@@ -445,29 +470,26 @@ class _HabitCard extends StatelessWidget {
               ? Colors.white.withValues(alpha: 0.10)
               : Colors.grey.withValues(alpha: 0.08));
 
-    final badgeTextColor = completed
+    final badgeTextColor = !isTodayActive
+        ? (isDark ? AppTheme.darkSecondaryText : Colors.grey.shade700)
+        : completed
         ? (isDark ? const Color(0xFF8FD18A) : AppTheme.primaryColor)
         : (isDark ? Colors.grey.shade300 : Colors.grey.shade600);
 
+    final lastAgo = habit.lastCompletedAgo(strings.isArabic);
+
     return Material(
       color: Colors.transparent,
-
       child: InkWell(
-        onTap: onTap,
+        onTap: () => onTap(),
         borderRadius: BorderRadius.circular(22),
-
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-
           padding: const EdgeInsets.all(15),
-
           decoration: BoxDecoration(
             color: cardColor,
-
             borderRadius: BorderRadius.circular(22),
-
             border: Border.all(color: borderColor, width: completed ? 1.4 : 1),
-
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.035),
@@ -476,13 +498,16 @@ class _HabitCard extends StatelessWidget {
               ),
             ],
           ),
-
           child: Row(
             children: [
               // ======================================================
               // PLANT
               // ======================================================
-              PlantWidget(habit: habit, size: 34),
+              PlantWidget(
+                habit: habit,
+                size: 34,
+                heroTag: 'home_plant_${habit.id}',
+              ),
 
               const SizedBox(width: 14),
 
@@ -492,47 +517,37 @@ class _HabitCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     Text(
                       habit.name,
-
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-
                         decoration: completed
                             ? TextDecoration.lineThrough
                             : null,
-
                         color: titleColor,
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
 
                     Row(
                       children: [
                         Icon(
                           Icons.local_fire_department_outlined,
-
-                          size: 16,
-
+                          size: 15,
                           color: habit.currentStreak > 0
                               ? Colors.orange.shade700
                               : (isDark
                                     ? Colors.grey.shade400
                                     : Colors.grey.shade500),
                         ),
-
-                        const SizedBox(width: 4),
-
+                        const SizedBox(width: 3),
                         Text(
                           strings.streak(habit.currentStreak),
-
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark
@@ -541,34 +556,49 @@ class _HabitCard extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        const SizedBox(width: 8),
 
-                        const SizedBox(width: 10),
-
+                        // Badge: Target count or Off Day or Completed
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 7,
-                            vertical: 3,
+                            vertical: 2,
                           ),
-
                           decoration: BoxDecoration(
                             color: badgeBgColor,
-
                             borderRadius: BorderRadius.circular(8),
                           ),
-
                           child: Text(
-                            completed ? strings.completed : strings.today,
-
+                            !isTodayActive
+                                ? strings.offDay
+                                : completed
+                                ? strings.completed
+                                : (habit.targetCount > 1
+                                      ? '${habit.todayCheckinsCount}/${habit.targetCount}'
+                                      : strings.today),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-
                               color: badgeTextColor,
                             ),
                           ),
                         ),
                       ],
                     ),
+
+                    if (lastAgo != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        '${strings.lastCheckin} $lastAgo',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: isDark
+                              ? AppTheme.darkSecondaryText
+                              : Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -576,11 +606,10 @@ class _HabitCard extends StatelessWidget {
               const SizedBox(width: 8),
 
               // ======================================================
-              // COMPLETE BUTTON WITH BOUNCE & SCALE ANIMATION
+              // COMPLETE BUTTON
               // ======================================================
               GestureDetector(
-                onTap: onToggle,
-
+                onTap: isTodayActive ? onToggle : null,
                 child: AnimatedScale(
                   scale: completed ? 1.05 : 1.0,
                   duration: const Duration(milliseconds: 250),
@@ -593,7 +622,11 @@ class _HabitCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: completed
                           ? AppTheme.primaryColor
-                          : Colors.transparent,
+                          : (!isTodayActive
+                                ? (isDark
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade200)
+                                : Colors.transparent),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: completed
@@ -604,20 +637,45 @@ class _HabitCard extends StatelessWidget {
                         width: 1.5,
                       ),
                     ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, anim) =>
-                          ScaleTransition(scale: anim, child: child),
-                      child: Icon(
-                        completed ? Icons.check_rounded : Icons.circle_outlined,
-                        key: ValueKey(completed),
-                        color: completed
-                            ? Colors.white
-                            : (isDark
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade500),
-                        size: completed ? 26 : 23,
-                      ),
+                    child: Center(
+                      child:
+                          habit.targetCount > 1 && !completed && isTodayActive
+                          ? Text(
+                              '${habit.todayCheckinsCount}/${habit.targetCount}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                              ),
+                            )
+                          : AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(
+                                  scale: CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeOutBack,
+                                  ),
+                                  child: child,
+                                );
+                              },
+                              child: Icon(
+                                completed
+                                    ? Icons.check
+                                    : (!isTodayActive
+                                          ? Icons.event_busy_rounded
+                                          : Icons.check_rounded),
+                                key: ValueKey('$completed-$isTodayActive'),
+                                color: completed
+                                    ? Colors.white
+                                    : (!isTodayActive
+                                          ? Colors.grey
+                                          : (isDark
+                                                ? Colors.grey.shade400
+                                                : Colors.grey.shade500)),
+                                size: 22,
+                              ),
+                            ),
                     ),
                   ),
                 ),

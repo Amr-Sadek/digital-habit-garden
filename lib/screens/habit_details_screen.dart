@@ -8,14 +8,16 @@ import '../widgets/plant_widget.dart';
 
 class HabitDetailsScreen extends StatefulWidget {
   final Habit habit;
+  final String? heroTag;
 
-  final Future<void> Function(Habit habit) onToggleHabit;
+  final Future<void> Function(Habit habit, {bool decrement}) onToggleHabit;
   final Future<void> Function(Habit habit) onEditHabit;
   final Future<void> Function(Habit habit) onDeleteHabit;
 
   const HabitDetailsScreen({
     super.key,
     required this.habit,
+    this.heroTag,
     required this.onToggleHabit,
     required this.onEditHabit,
     required this.onDeleteHabit,
@@ -29,200 +31,41 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
   late bool _completedToday;
 
   bool _isToggling = false;
-  bool _isChangingReminder = false;
-
-  // ============================================================
-  // INIT
-  // ============================================================
 
   @override
   void initState() {
     super.initState();
-
     _completedToday = widget.habit.isCompletedToday;
   }
-
-  // ============================================================
-  // UPDATE
-  // ============================================================
 
   @override
   void didUpdateWidget(covariant HabitDetailsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-
     _completedToday = widget.habit.isCompletedToday;
   }
 
   // ============================================================
-  // CHANGE REMINDER TIME
+  // WEEKLY SCHEDULE CARD
   // ============================================================
 
-  Future<void> _changeReminderTime() async {
-    if (_isChangingReminder) {
-      return;
-    }
-
-    final currentTime =
-        widget.habit.reminderHour != null && widget.habit.reminderMinute != null
-        ? TimeOfDay(
-            hour: widget.habit.reminderHour!,
-            minute: widget.habit.reminderMinute!,
-          )
-        : TimeOfDay.now();
-
-    final selectedTime = await showTimePicker(
-      context: context,
-      initialTime: currentTime,
-    );
-
-    if (selectedTime == null) {
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isChangingReminder = true;
-    });
-
-    try {
-      final success = await NotificationService.instance.scheduleHabitReminder(
-        habitId: widget.habit.id,
-        habitName: widget.habit.name,
-        hour: selectedTime.hour,
-        minute: selectedTime.minute,
-        skipToday: widget.habit.isCompletedToday,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      if (!success) {
-        final strings = AppStringsScope.of(context);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              strings.isArabic
-                  ? 'تعذر جدولة التذكير.'
-                  : 'Could not schedule reminder.',
-            ),
-          ),
-        );
-
-        return;
-      }
-
-      widget.habit.reminderEnabled = true;
-      widget.habit.reminderHour = selectedTime.hour;
-      widget.habit.reminderMinute = selectedTime.minute;
-
-      setState(() {});
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      final strings = AppStringsScope.of(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            strings.isArabic
-                ? 'تعذر جدولة التذكير: ${e.toString()}'
-                : 'Could not schedule reminder: ${e.toString()}',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isChangingReminder = false;
-        });
-      }
-    }
-  }
-
-  // ============================================================
-  // TOGGLE REMINDER
-  // ============================================================
-
-  Future<void> _toggleReminder(bool enabled) async {
-    if (_isChangingReminder) {
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // TURN OFF
-    // ----------------------------------------------------------
-
-    if (!enabled) {
-      setState(() {
-        _isChangingReminder = true;
-      });
-
-      try {
-        await NotificationService.instance.cancelHabitReminder(widget.habit.id);
-
-        widget.habit.reminderEnabled = false;
-        widget.habit.reminderHour = null;
-        widget.habit.reminderMinute = null;
-
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {});
-      } catch (e) {
-        if (!mounted) {
-          return;
-        }
-
-        final strings = AppStringsScope.of(context);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              strings.isArabic
-                  ? 'تعذر إيقاف التذكير: ${e.toString()}'
-                  : 'Could not disable reminder: ${e.toString()}',
-            ),
-          ),
-        );
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isChangingReminder = false;
-          });
-        }
-      }
-
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // TURN ON
-    // ----------------------------------------------------------
-
-    await _changeReminderTime();
-  }
-
-  // ============================================================
-  // REMINDER CARD
-  // ============================================================
-
-  Widget _buildReminderCard() {
+  Widget _buildWeeklyScheduleCard() {
     final strings = AppStringsScope.of(context);
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final isArabic = strings.isArabic;
     final habit = widget.habit;
 
-    // Check whether a reminder time exists.
-    final hasTime = habit.reminderHour != null && habit.reminderMinute != null;
+    final weekdays = [
+      {'id': 1, 'name': isArabic ? 'الإثنين' : 'Mon'},
+      {'id': 2, 'name': isArabic ? 'الثلاثاء' : 'Tue'},
+      {'id': 3, 'name': isArabic ? 'الأربعاء' : 'Wed'},
+      {'id': 4, 'name': isArabic ? 'الخميس' : 'Thu'},
+      {'id': 5, 'name': isArabic ? 'الجمعة' : 'Fri'},
+      {'id': 6, 'name': isArabic ? 'السبت' : 'Sat'},
+      {'id': 7, 'name': isArabic ? 'الأحد' : 'Sun'},
+    ];
+
+    final activeCount = habit.activeDays.length;
+    final offCount = 7 - activeCount;
 
     return Container(
       width: double.infinity,
@@ -235,6 +78,157 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_outlined,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isArabic ? 'جدول الأسبوع' : 'Weekly Schedule',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isArabic
+                          ? '$activeCount أيام عمل • $offCount أيام راحة'
+                          : '$activeCount active days • $offCount off days',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppTheme.darkSecondaryText
+                            : Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: weekdays.map((day) {
+              final dayId = day['id'] as int;
+              final dayName = day['name'] as String;
+              final isActive = habit.activeDays.contains(dayId);
+
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppTheme.primaryColor.withValues(
+                          alpha: isDark ? .22 : .12,
+                        )
+                      : (isDark
+                            ? const Color(0xFF243025)
+                            : Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isActive
+                        ? AppTheme.primaryColor
+                        : Colors.transparent,
+                    width: isActive ? 1.2 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isActive
+                          ? Icons.check_circle_rounded
+                          : Icons.event_busy_rounded,
+                      size: 15,
+                      color: isActive
+                          ? AppTheme.primaryColor
+                          : (isDark
+                                ? Colors.grey.shade600
+                                : Colors.grey.shade500),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      dayName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isActive
+                            ? (isDark ? Colors.white : AppTheme.primaryColor)
+                            : (isDark
+                                  ? AppTheme.darkSecondaryText
+                                  : Colors.grey.shade700),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // REMINDER CARD
+  // ============================================================
+
+  Widget _buildReminderCard() {
+    final strings = AppStringsScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final habit = widget.habit;
+
+    final hasReminders =
+        habit.reminderEnabled &&
+        (habit.reminderTimes.isNotEmpty ||
+            (habit.reminderHour != null && habit.reminderMinute != null));
+
+    final timesList = habit.reminderTimes.isNotEmpty
+        ? habit.reminderTimes
+        : (habit.reminderHour != null && habit.reminderMinute != null
+              ? [
+                  {
+                    'hour': habit.reminderHour!,
+                    'minute': habit.reminderMinute!,
+                  },
+                ]
+              : <Map<String, dynamic>>[]);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.primaryColor.withValues(alpha: isDark ? .25 : .15),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -258,7 +252,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      strings.isArabic ? 'تذكير يومي' : 'Daily Reminder',
+                      strings.isArabic ? 'تذكيرات العادة' : 'Habit Reminders',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -268,13 +262,13 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     const SizedBox(height: 4),
 
                     Text(
-                      habit.reminderEnabled && hasTime
-                          ? strings.isArabic
-                                ? 'كل يوم الساعة ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}'
-                                : 'Every day at ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}'
-                          : strings.isArabic
-                          ? 'لم يتم ضبط تذكير'
-                          : 'No reminder set',
+                      hasReminders
+                          ? (strings.isArabic
+                                ? '${timesList.where((t) => t['enabled'] != false).length} تذكيرات مفعّلة'
+                                : '${timesList.where((t) => t['enabled'] != false).length} reminders active')
+                          : (strings.isArabic
+                                ? 'لم يتم ضبط تذكير'
+                                : 'No reminder set'),
                       style: TextStyle(
                         color: isDark
                             ? AppTheme.darkSecondaryText
@@ -285,29 +279,61 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                   ],
                 ),
               ),
-
-              Switch(
-                value: habit.reminderEnabled,
-                activeTrackColor: AppTheme.primaryColor.withValues(alpha: .45),
-                onChanged: _isChangingReminder ? null : _toggleReminder,
-              ),
             ],
           ),
 
-          if (habit.reminderEnabled && hasTime) ...[
+          if (hasReminders && timesList.isNotEmpty) ...[
             const SizedBox(height: 14),
 
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _isChangingReminder ? null : _changeReminderTime,
-                icon: const Icon(Icons.access_time),
-                label: Text(
-                  strings.isArabic
-                      ? 'تغيير الوقت: ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}'
-                      : 'Change time: ${_formatTime(context, habit.reminderHour!, habit.reminderMinute!)}',
-                ),
-              ),
+            Column(
+              children: List.generate(timesList.length, (index) {
+                final tMap = timesList[index];
+                final hour = tMap['hour'] as int? ?? 8;
+                final minute = tMap['minute'] as int? ?? 0;
+                final isEnabled = tMap['enabled'] as bool? ?? true;
+                final formatted = _formatTime(context, hour, minute);
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF243025)
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        strings.reminderNumber(index + 1),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isEnabled
+                              ? (isDark
+                                    ? AppTheme.darkText
+                                    : AppTheme.textColor)
+                              : Colors.grey,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        formatted,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isEnabled
+                              ? AppTheme.primaryColor
+                              : Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
           ],
         ],
@@ -390,7 +416,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                 children: [
                   SizedBox(
                     height: 80,
-                    child: PlantWidget(habit: habit, size: 75),
+                    child: PlantWidget(
+                      habit: habit,
+                      size: 75,
+                      heroTag: widget.heroTag ?? 'plant_image_${habit.id}',
+                    ),
                   ),
 
                   const SizedBox(height: 12),
@@ -475,7 +505,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: completedToday
+                      color: !widget.habit.isTodayActive
+                          ? (isDark
+                                ? Colors.white.withValues(alpha: .08)
+                                : Colors.grey.shade200)
+                          : completedToday
                           ? AppTheme.primaryColor.withValues(
                               alpha: isDark ? .20 : .12,
                             )
@@ -483,10 +517,14 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Icon(
-                      completedToday
+                      !widget.habit.isTodayActive
+                          ? Icons.event_busy_rounded
+                          : completedToday
                           ? Icons.check_circle
                           : Icons.circle_outlined,
-                      color: completedToday
+                      color: !widget.habit.isTodayActive
+                          ? Colors.grey
+                          : completedToday
                           ? AppTheme.primaryColor
                           : isDark
                           ? const Color(0xFF9BA69B)
@@ -502,9 +540,13 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          completedToday
+                          !widget.habit.isTodayActive
+                              ? strings.offDay
+                              : completedToday
                               ? strings.completedToday
-                              : strings.notCompletedYet,
+                              : (widget.habit.targetCount > 1
+                                    ? '${widget.habit.todayCheckinsCount}/${widget.habit.targetCount}'
+                                    : strings.notCompletedYet),
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
@@ -514,7 +556,11 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                         const SizedBox(height: 4),
 
                         Text(
-                          completedToday
+                          !widget.habit.isTodayActive
+                              ? (strings.isArabic
+                                    ? 'اليوم ليس من أيام تنفيذ هذه العادة'
+                                    : 'Today is an off day for this habit')
+                              : completedToday
                               ? strings.streakSafe
                               : strings.completeToKeepGrowing,
                           style: TextStyle(
@@ -522,41 +568,141 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                             fontSize: 12,
                           ),
                         ),
+
+                        if (widget.habit.lastCompletedAgo(strings.isArabic) !=
+                            null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '${strings.lastCheckin} ${widget.habit.lastCompletedAgo(strings.isArabic)}',
+                            style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
 
-                  Switch(
-                    value: completedToday,
-                    activeTrackColor: AppTheme.primaryColor.withValues(
-                      alpha: .45,
+                  if (widget.habit.isTodayActive &&
+                      widget.habit.targetCount > 1) ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed:
+                              (_isToggling ||
+                                  widget.habit.todayCheckinsCount == 0)
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _isToggling = true;
+                                  });
+                                  try {
+                                    await widget.onToggleHabit(
+                                      widget.habit,
+                                      decrement: true,
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _completedToday =
+                                            widget.habit.isCompletedToday;
+                                        _isToggling = false;
+                                      });
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.remove_circle_outline_rounded),
+                          color: widget.habit.todayCheckinsCount > 0
+                              ? Colors.redAccent
+                              : Colors.grey,
+                          iconSize: 28,
+                        ),
+                        Text(
+                          '${widget.habit.todayCheckinsCount}/${widget.habit.targetCount}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed:
+                              (_isToggling || widget.habit.isCompletedToday)
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _isToggling = true;
+                                  });
+                                  try {
+                                    await widget.onToggleHabit(
+                                      widget.habit,
+                                      decrement: false,
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _completedToday =
+                                            widget.habit.isCompletedToday;
+                                        _isToggling = false;
+                                      });
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.add_circle_outline_rounded),
+                          color: !widget.habit.isCompletedToday
+                              ? AppTheme.primaryColor
+                              : Colors.grey,
+                          iconSize: 28,
+                        ),
+                      ],
                     ),
-                    onChanged: _isToggling
-                        ? null
-                        : (_) async {
-                            setState(() {
-                              _completedToday = !_completedToday;
+                  ] else ...[
+                    Switch(
+                      value: completedToday,
+                      activeTrackColor: AppTheme.primaryColor.withValues(
+                        alpha: .45,
+                      ),
+                      onChanged: (_isToggling || !widget.habit.isTodayActive)
+                          ? null
+                          : (_) async {
+                              setState(() {
+                                _completedToday = !_completedToday;
+                                _isToggling = true;
+                              });
 
-                              _isToggling = true;
-                            });
-
-                            try {
-                              await widget.onToggleHabit(widget.habit);
-                            } finally {
-                              if (mounted) {
-                                setState(() {
-                                  _completedToday =
-                                      widget.habit.isCompletedToday;
-
-                                  _isToggling = false;
-                                });
+                              try {
+                                await widget.onToggleHabit(widget.habit);
+                              } finally {
+                                if (mounted) {
+                                  setState(() {
+                                    _completedToday =
+                                        widget.habit.isCompletedToday;
+                                    _isToggling = false;
+                                  });
+                                }
                               }
-                            }
-                          },
-                  ),
+                            },
+                    ),
+                  ],
                 ],
               ),
             ),
+
+            const SizedBox(height: 28),
+
+            // ==================================================
+            // WEEKLY SCHEDULE
+            // ==================================================
+            Text(
+              strings.isArabic ? 'أيام التنفيذ والراحة' : 'Schedule',
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildWeeklyScheduleCard(),
 
             const SizedBox(height: 28),
 
@@ -634,8 +780,8 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                 onPressed: () async {
                   await widget.onEditHabit(widget.habit);
 
-                  if (context.mounted) {
-                    Navigator.pop(context);
+                  if (mounted) {
+                    setState(() {});
                   }
                 },
                 icon: const Icon(Icons.edit_outlined),

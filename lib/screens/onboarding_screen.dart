@@ -337,6 +337,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // ============================================================
 
   Widget _buildSlide2Visual(bool isDark) {
+    final isArabic = AppStringsScope.of(context).isArabic;
+
     return Container(
       width: 240,
       height: 200,
@@ -362,47 +364,50 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: .15),
-                  shape: BoxShape.circle,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
                 ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
-                  color: Colors.orange,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                width: 56,
-                height: 56,
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor.withValues(alpha: .15),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
-                  Icons.notifications_active_rounded,
-                  color: AppTheme.primaryColor,
-                  size: 30,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.task_alt_rounded,
+                      color: AppTheme.primaryColor,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '2/3 ${isArabic ? "مرّات اليوم" : "Today"}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: .12),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppTheme.primaryColor,
+                  Icons.event_busy_rounded,
+                  color: Colors.grey,
                   size: 18,
                 ),
                 const SizedBox(width: 6),
@@ -410,13 +415,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      AppStringsScope.of(context).isArabic
-                          ? '7 أيام سلسلة متواصلة 🔥'
-                          : '7 Day Streak 🔥',
-                      style: const TextStyle(
+                      isArabic ? 'يوم راحة محمي 🌿' : 'Off Day Protected 🌿',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: AppTheme.primaryColor,
+                        color: isDark
+                            ? AppTheme.darkSecondaryText
+                            : Colors.grey.shade700,
                       ),
                     ),
                   ),
@@ -434,6 +439,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // ============================================================
 
   Widget _buildSlide3Visual(bool isDark) {
+    final isArabic = AppStringsScope.of(context).isArabic;
+
     return Container(
       width: 240,
       height: 200,
@@ -459,37 +466,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
+                  color: Colors.amber.withValues(alpha: .18),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFFA000), width: 2),
                 ),
                 child: const Icon(
-                  Icons.wb_sunny_rounded,
-                  color: Color(0xFFFFA000),
-                  size: 32,
+                  Icons.emoji_events_rounded,
+                  color: Colors.amber,
+                  size: 30,
                 ),
               ),
               const SizedBox(width: 16),
               Container(
-                width: 58,
-                height: 58,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF263238),
+                  color: AppTheme.primaryColor.withValues(alpha: .18),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF2B84B), width: 2),
                 ),
                 child: const Icon(
-                  Icons.nightlight_round,
-                  color: Color(0xFFF2B84B),
-                  size: 32,
+                  Icons.notifications_active_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 28,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -500,7 +505,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.palette_outlined,
+                  Icons.workspace_premium_rounded,
                   color: AppTheme.primaryColor,
                   size: 18,
                 ),
@@ -509,9 +514,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      AppStringsScope.of(context).isArabic
-                          ? 'نهار / ليل & فاتح / داكن'
-                          : 'Day/Night & Light/Dark',
+                      isArabic
+                          ? '20 وساماً بالبروفايل 🏆'
+                          : '20 Garden Badges 🏆',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
