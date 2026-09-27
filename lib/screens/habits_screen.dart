@@ -11,7 +11,8 @@ class HabitsScreen extends StatefulWidget {
   final Future<void> Function(Habit habit) onToggleHabit;
   final Future<void> Function(Habit habit) onDeleteHabit;
   final Future<void> Function(Habit habit) onEditHabit;
-  final Future<void> Function(Habit habit) onOpenHabitDetails;
+  final Future<void> Function(Habit habit, {String? heroTag})
+  onOpenHabitDetails;
 
   // Called after the user finishes changing the order.
   final Future<void> Function(List<Habit> habits)? onHabitsReordered;
@@ -30,7 +31,11 @@ class HabitsScreen extends StatefulWidget {
   State<HabitsScreen> createState() => _HabitsScreenState();
 }
 
-class _HabitsScreenState extends State<HabitsScreen> {
+class _HabitsScreenState extends State<HabitsScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   late List<Habit> _habits;
 
   bool _isReordering = false;
@@ -134,6 +139,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final strings = AppStringsScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filtered = _filteredHabits;
@@ -275,7 +281,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: _isReordering ? null : () => widget.onOpenHabitDetails(habit),
+        onTap: _isReordering
+            ? null
+            : () => widget.onOpenHabitDetails(
+                habit,
+                heroTag: 'habits_plant_${habit.id}',
+              ),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -296,7 +307,13 @@ class _HabitsScreenState extends State<HabitsScreen> {
               SizedBox(
                 width: 48,
                 height: 48,
-                child: Center(child: PlantWidget(habit: habit, size: 42)),
+                child: Center(
+                  child: PlantWidget(
+                    habit: habit,
+                    size: 42,
+                    heroTag: 'habits_plant_${habit.id}',
+                  ),
+                ),
               ),
 
               const SizedBox(width: 12),
@@ -382,35 +399,147 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        if (!habit.isTodayActive)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              strings.offDay,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark
+                                    ? AppTheme.darkSecondaryText
+                                    : Colors.grey.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        else if (habit.targetCount > 1)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: isDark ? .20 : .12,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${habit.todayCheckinsCount}/${habit.targetCount}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
+
+                    if (habit.lastCompletedAgo(strings.isArabic) != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        '${strings.lastCheckin} ${habit.lastCompletedAgo(strings.isArabic)}',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: isDark
+                              ? AppTheme.darkSecondaryText
+                              : Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
 
               if (!_isReordering) ...[
-                IconButton(
-                  onPressed: () => widget.onToggleHabit(habit),
-                  icon: AnimatedSwitcher(
+                GestureDetector(
+                  onTap: habit.isTodayActive
+                      ? () => widget.onToggleHabit(habit)
+                      : null,
+                  child: AnimatedScale(
+                    scale: habit.isCompletedToday ? 1.05 : 1.0,
                     duration: const Duration(milliseconds: 250),
-                    transitionBuilder: (child, animation) {
-                      return ScaleTransition(
-                        scale: CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutBack,
+                    curve: Curves.easeOutBack,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: habit.isCompletedToday
+                            ? AppTheme.primaryColor
+                            : (!habit.isTodayActive
+                                  ? (isDark
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade200)
+                                  : Colors.transparent),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: habit.isCompletedToday
+                              ? AppTheme.primaryColor
+                              : (isDark
+                                    ? Colors.grey.shade600
+                                    : Colors.grey.shade300),
+                          width: 1.5,
                         ),
-                        child: child,
-                      );
-                    },
-                    child: Icon(
-                      habit.isCompletedToday
-                          ? Icons.check_circle
-                          : Icons.circle_outlined,
-                      key: ValueKey(habit.isCompletedToday),
-                      color: habit.isCompletedToday
-                          ? AppTheme.primaryColor
-                          : Colors.grey,
-                      size: 26,
+                      ),
+                      child: Center(
+                        child:
+                            habit.targetCount > 1 &&
+                                !habit.isCompletedToday &&
+                                habit.isTodayActive
+                            ? Text(
+                                '${habit.todayCheckinsCount}/${habit.targetCount}',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              )
+                            : AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                transitionBuilder: (child, animation) {
+                                  return ScaleTransition(
+                                    scale: CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutBack,
+                                    ),
+                                    child: child,
+                                  );
+                                },
+                                child: Icon(
+                                  habit.isCompletedToday
+                                      ? Icons.check
+                                      : (!habit.isTodayActive
+                                            ? Icons.event_busy_rounded
+                                            : Icons.check_rounded),
+                                  key: ValueKey(
+                                    '${habit.isCompletedToday}-${habit.isTodayActive}-${habit.todayCheckinsCount}',
+                                  ),
+                                  color: habit.isCompletedToday
+                                      ? Colors.white
+                                      : (!habit.isTodayActive
+                                            ? Colors.grey
+                                            : (isDark
+                                                  ? Colors.grey.shade400
+                                                  : Colors.grey.shade500)),
+                                  size: 20,
+                                ),
+                              ),
+                      ),
                     ),
                   ),
                 ),

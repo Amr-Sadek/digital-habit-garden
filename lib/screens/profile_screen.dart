@@ -20,7 +20,10 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   AppStrings get strings => AppStringsScope.of(context);
 
   static const String _nameKey = 'profile_name';
@@ -397,6 +400,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 20
   bool get _hasForestCreator =>
       widget.habits.where((h) => h.currentStreak >= 31).length >= 5;
+  // 21
+  bool get _hasMultiCheckinPioneer =>
+      widget.habits.any((h) => h.targetCount > 1 && h.isCompletedToday);
+  // 22
+  bool get _hasScheduleArchitect =>
+      widget.habits.any((h) => h.activeDays.length < 7);
+  // 23
+  bool get _hasReminderSpecialist => widget.habits.any(
+    (h) =>
+        h.reminderEnabled &&
+        h.reminderTimes.where((t) => t['enabled'] != false).length > 1,
+  );
+  // 24
+  bool get _hasBotanicalMaster => _hasEarlyBird && _hasNightOwl;
+  // 25
+  bool get _hasYearlyLegend => widget.habits.any((h) => h.currentStreak >= 180);
 
   int get _unlockedBadgesCount {
     int count = 0;
@@ -420,6 +439,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_hasMasterGardener) count++;
     if (_hasLegend) count++;
     if (_hasForestCreator) count++;
+    if (_hasMultiCheckinPioneer) count++;
+    if (_hasScheduleArchitect) count++;
+    if (_hasReminderSpecialist) count++;
+    if (_hasBotanicalMaster) count++;
+    if (_hasYearlyLegend) count++;
     return count;
   }
 
@@ -495,7 +519,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
-                          strings.badgesUnlockedCount(_unlockedBadgesCount, 20),
+                          strings.badgesUnlockedCount(_unlockedBadgesCount, 25),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -514,21 +538,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisSpacing: 10,
                       childAspectRatio: 1.20,
                       children: [
-                        _buildBadgeCard(
-                          context: context,
-                          title: strings.badgeFirstSprout,
-                          description: strings.badgeFirstSproutDesc,
-                          icon: Icons.emoji_events_outlined,
-                          isUnlocked: _hasFirstSprout,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
+                        // Group 1: Starter Milestones (البدايات الأولى)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeFirstHabit,
                           description: strings.badgeFirstHabitDesc,
                           icon: Icons.eco_outlined,
                           isUnlocked: _hasFirstHabit,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeFirstSprout,
+                          description: strings.badgeFirstSproutDesc,
+                          icon: Icons.emoji_events_outlined,
+                          isUnlocked: _hasFirstSprout,
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -541,6 +566,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           isDark: isDark,
                           strings: strings,
                         ),
+
+                        // Group 2: Daily Customization & Timing (التخصيص والتوقيت)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeEarlyBird,
@@ -559,6 +586,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           isDark: isDark,
                           strings: strings,
                         ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeBotanicalMaster,
+                          description: strings.badgeBotanicalMasterDesc,
+                          icon: Icons.contrast_rounded,
+                          isUnlocked: _hasBotanicalMaster,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeMultiCheckinPioneer,
+                          description: strings.badgeMultiCheckinPioneerDesc,
+                          icon: Icons.water_drop_outlined,
+                          isUnlocked: _hasMultiCheckinPioneer,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeScheduleArchitect,
+                          description: strings.badgeScheduleArchitectDesc,
+                          icon: Icons.shield_outlined,
+                          isUnlocked: _hasScheduleArchitect,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeReminderSet,
+                          description: strings.badgeReminderSetDesc,
+                          icon: Icons.notifications_active_outlined,
+                          isUnlocked: _hasReminderSet,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeReminderSpecialist,
+                          description: strings.badgeReminderSpecialistDesc,
+                          icon: Icons.add_alert_outlined,
+                          isUnlocked: _hasReminderSpecialist,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+
+                        // Group 3: Streak Milestones (سلاسل الالتزام)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badge3DaySpark,
@@ -588,64 +662,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         _buildBadgeCard(
                           context: context,
-                          title: strings.badgeMultiTasker,
-                          description: strings.badgeMultiTaskerDesc,
-                          icon: Icons.grass_outlined,
-                          isUnlocked: _hasMultiTasker,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
-                        _buildBadgeCard(
-                          context: context,
-                          title: strings.badgeReminderSet,
-                          description: strings.badgeReminderSetDesc,
-                          icon: Icons.notifications_active_outlined,
-                          isUnlocked: _hasReminderSet,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
-                        _buildBadgeCard(
-                          context: context,
-                          title: strings.badgeCentury,
-                          description: strings.badgeCenturyDesc,
-                          icon: Icons.auto_awesome_motion_outlined,
-                          isUnlocked: _hasCentury,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
-                        _buildBadgeCard(
-                          context: context,
-                          title: strings.badgeFirstBloom,
-                          description: strings.badgeFirstBloomDesc,
-                          icon: Icons.local_florist_outlined,
-                          isUnlocked: _hasFirstBloom,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
-                        _buildBadgeCard(
-                          context: context,
-                          title: strings.badgeThrivingGarden,
-                          description: strings.badgeThrivingGardenDesc,
-                          icon: Icons.park_outlined,
-                          isUnlocked: _hasThrivingGarden,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
-                        _buildBadgeCard(
-                          context: context,
                           title: strings.badgeWeeklyHero,
                           description: strings.badgeWeeklyHeroDesc,
                           icon: Icons.calendar_month_outlined,
                           isUnlocked: _hasWeeklyHero,
-                          isDark: isDark,
-                          strings: strings,
-                        ),
-                        _buildBadgeCard(
-                          context: context,
-                          title: strings.badgeCollector,
-                          description: strings.badgeCollectorDesc,
-                          icon: Icons.diamond_outlined,
-                          isUnlocked: _hasCollector,
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -678,10 +698,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         _buildBadgeCard(
                           context: context,
+                          title: strings.badgeYearlyLegend,
+                          description: strings.badgeYearlyLegendDesc,
+                          icon: Icons.diamond_outlined,
+                          isUnlocked: _hasYearlyLegend,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+
+                        // Group 4: Quantity Milestones (عدد العادات)
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeMultiTasker,
+                          description: strings.badgeMultiTaskerDesc,
+                          icon: Icons.grass_outlined,
+                          isUnlocked: _hasMultiTasker,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeCollector,
+                          description: strings.badgeCollectorDesc,
+                          icon: Icons.yard_outlined,
+                          isUnlocked: _hasCollector,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+
+                        // Group 5: Total Check-ins Milestones (إجمالي الإنجازات)
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeCentury,
+                          description: strings.badgeCenturyDesc,
+                          icon: Icons.auto_awesome_motion_outlined,
+                          isUnlocked: _hasCentury,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
                           title: strings.badgeLegend,
                           description: strings.badgeLegendDesc,
                           icon: Icons.auto_awesome_rounded,
                           isUnlocked: _hasLegend,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+
+                        // Group 6: Plant Growth Milestones (نمو النباتات)
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeFirstBloom,
+                          description: strings.badgeFirstBloomDesc,
+                          icon: Icons.local_florist_outlined,
+                          isUnlocked: _hasFirstBloom,
+                          isDark: isDark,
+                          strings: strings,
+                        ),
+                        _buildBadgeCard(
+                          context: context,
+                          title: strings.badgeThrivingGarden,
+                          description: strings.badgeThrivingGardenDesc,
+                          icon: Icons.park_outlined,
+                          isUnlocked: _hasThrivingGarden,
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -871,6 +951,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final strings = AppStringsScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1154,7 +1235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 subtitle: Text(
-                  strings.badgesUnlockedCount(_unlockedBadgesCount, 20),
+                  strings.badgesUnlockedCount(_unlockedBadgesCount, 25),
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark

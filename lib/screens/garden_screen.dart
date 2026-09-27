@@ -18,10 +18,11 @@ class GardenScreen extends StatefulWidget {
   final GardenTheme gardenTheme;
   final Future<void> Function(GardenTheme theme) onThemeChanged;
 
-  final Future<void> Function(Habit habit) onToggleHabit;
+  final Future<void> Function(Habit habit, {bool decrement}) onToggleHabit;
   final Future<void> Function(Habit habit) onEditHabit;
   final Future<void> Function(Habit habit) onDeleteHabit;
-  final Future<void> Function(Habit habit)? onOpenHabitDetails;
+  final Future<void> Function(Habit habit, {String? heroTag})?
+  onOpenHabitDetails;
 
   const GardenScreen({
     super.key,
@@ -38,7 +39,11 @@ class GardenScreen extends StatefulWidget {
   State<GardenScreen> createState() => _GardenScreenState();
 }
 
-class _GardenScreenState extends State<GardenScreen> {
+class _GardenScreenState extends State<GardenScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   AppStrings get strings => AppStringsScope.of(context);
 
   final GlobalKey _gardenKey = GlobalKey();
@@ -175,6 +180,7 @@ class _GardenScreenState extends State<GardenScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.myGarden),
@@ -752,18 +758,36 @@ class _GardenScreenState extends State<GardenScreen> {
     });
 
     final habit = widget.habits[index];
+    final tag = 'garden_layout_plant_${habit.id}';
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HabitDetailsScreen(
-          habit: habit,
-          onToggleHabit: widget.onToggleHabit,
-          onEditHabit: widget.onEditHabit,
-          onDeleteHabit: widget.onDeleteHabit,
+    if (widget.onOpenHabitDetails != null) {
+      await widget.onOpenHabitDetails!(habit, heroTag: tag);
+    } else {
+      await Navigator.push(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 500),
+          reverseTransitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              HabitDetailsScreen(
+                habit: habit,
+                heroTag: tag,
+                onToggleHabit: widget.onToggleHabit,
+                onEditHabit: widget.onEditHabit,
+                onDeleteHabit: widget.onDeleteHabit,
+              ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: child,
+            );
+          },
         ),
-      ),
-    );
+      );
+    }
 
     if (!mounted) {
       return;
@@ -855,7 +879,10 @@ class _GardenScreenState extends State<GardenScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: widget.onOpenHabitDetails != null
-              ? () => widget.onOpenHabitDetails!(habit)
+              ? () => widget.onOpenHabitDetails!(
+                  habit,
+                  heroTag: 'garden_plant_${habit.id}',
+                )
               : null,
           borderRadius: BorderRadius.circular(20),
           child: Container(
@@ -874,7 +901,13 @@ class _GardenScreenState extends State<GardenScreen> {
                 SizedBox(
                   width: 50,
                   height: 50,
-                  child: Center(child: PlantWidget(habit: habit, size: 44)),
+                  child: Center(
+                    child: PlantWidget(
+                      habit: habit,
+                      size: 44,
+                      heroTag: 'garden_plant_${habit.id}',
+                    ),
+                  ),
                 ),
 
                 const SizedBox(width: 12),
@@ -1193,7 +1226,11 @@ class _GardenPlant extends StatelessWidget {
               left: (scaledWidth - plantSize) / 2,
               width: plantSize,
               height: plantSize,
-              child: PlantWidget(habit: habit, size: plantSize),
+              child: PlantWidget(
+                habit: habit,
+                size: plantSize,
+                heroTag: 'garden_layout_plant_${habit.id}',
+              ),
             ),
 
             // ================================================================
@@ -1492,9 +1529,9 @@ class _StageSegmentedProgressBar extends StatelessWidget {
               ? (progress.filledSegments == 5 &&
                         progress.nextStageNameKey != 'fully_grown'
                     ? (isArabic
-                          ? 'يوم واحد ويتم التطوير لـ $nextStageTitle 🚀'
-                          : '1 day to $nextStageTitle 🚀')
-                    : (isArabic ? 'مكتمل النمو! 🌟' : 'Fully Grown! 🌟'))
+                          ? 'مكتملة اليوم! ستتطور غداً لـ $nextStageTitle 🚀'
+                          : 'Completed today! Will evolve to $nextStageTitle tomorrow 🚀')
+                    : (isArabic ? 'مكتملة النمو! 🌟' : 'Fully Grown! 🌟'))
               : (isArabic
                     ? 'باقي ${progress.daysRemaining} ${progress.daysRemaining == 1
                           ? "يوم"

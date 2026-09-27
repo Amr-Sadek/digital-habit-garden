@@ -19,6 +19,47 @@ class AppStrings {
 
   String get edit => isArabic ? 'تعديل' : 'Edit';
 
+  String get timesPerDay => isArabic ? 'المرّات يومياً' : 'Times per day';
+
+  String get timesPerDaySubtitle => isArabic
+      ? 'عدد المرات المطلوبة لإكمال العادة يومياً'
+      : 'Target completions required each day';
+
+  String get activeDays => isArabic ? 'أيام التنفيذ' : 'Active Days';
+
+  String get activeDaysSubtitle => isArabic
+      ? 'الأيام المحددة لتنفيذ العادة بحديقتك'
+      : 'Days of the week this habit is scheduled';
+
+  String get offDay => isArabic ? 'يوم راحة' : 'Off Day';
+
+  String reminderNumber(int n) => isArabic ? 'تذكير $n' : 'Reminder $n';
+
+  String get lastCheckin => isArabic ? 'آخر إكمال:' : 'Last check-in:';
+
+  String get justNow => isArabic ? 'منذ لحظات' : 'Just now';
+
+  String minsAgo(int mins) => isArabic ? 'منذ $mins دقيقة' : '$mins mins ago';
+
+  String hoursAgo(int hours) => isArabic
+      ? 'منذ $hours ${hours == 1
+            ? "ساعة"
+            : hours == 2
+            ? "ساعتين"
+            : "ساعات"}'
+      : '$hours ${hours == 1 ? "hour" : "hours"} ago';
+
+  String daysAgo(int days) => isArabic
+      ? 'منذ $days ${days == 1
+            ? "يوم"
+            : days == 2
+            ? "يومين"
+            : "أيام"}'
+      : '$days ${days == 1 ? "day" : "days"} ago';
+
+  String get addReminderTime =>
+      isArabic ? 'إضافة وقت تذكير' : 'Add Reminder Time';
+
   String get skip => isArabic ? 'تخطي' : 'Skip';
 
   String get next => isArabic ? 'التالي' : 'Next';
@@ -33,19 +74,20 @@ class AppStrings {
       : 'Transform your daily habits into virtual plants that grow and thrive every day you stay consistent.';
 
   String get onboardingTitle2 => isArabic
-      ? 'حافظ على سلسلتك وتذكيراتك 🔥'
-      : 'Build Streaks & Stay Consistent 🔥';
+      ? 'أهداف مرنة وجداول مخصصة 🎯'
+      : 'Flexible Goals & Custom Schedules 🎯';
 
   String get onboardingDesc2 => isArabic
-      ? 'تلقَّ تذكيرات ذكية في مواعيدك، واحفظ سلسلتك متواصلة دون انقطاع لتطوير نفسك.'
-      : 'Receive smart timely reminders, protect your daily streaks, and celebrate every habit milestone.';
+      ? 'حدد مرّات الإكمال اليومية، وجدول الأيام المحددة مع حماية سلسلتك في أيام الراحة.'
+      : 'Set daily target check-ins, customize active weekdays, and protect your streaks on off-days.';
 
-  String get onboardingTitle3 =>
-      isArabic ? 'حديقتك بأسلوبك الخاص ☀️🌙' : 'Personalize Your Garden ☀️🌙';
+  String get onboardingTitle3 => isArabic
+      ? 'تذكيرات ذكية وأوسمة الحديقة 🏆'
+      : 'Smart Reminders & Garden Badges 🏆';
 
   String get onboardingDesc3 => isArabic
-      ? 'استمتع بالتحويل بين خلفيات النهار والليل ودعم كامل للنمط الداكن والمضيء.'
-      : 'Switch between morning and night garden themes with seamless light and dark mode support.';
+      ? 'اضبط تذكيرات متعددة بمرونة واجمع 20 وساماً بالبروفايل مع دعم النمط الداكن والمضيء.'
+      : 'Set multiple daily reminders, unlock 20 unique garden badges, with seamless light and dark mode.';
 
   // ============================================================
   // ACHIEVEMENTS / BADGES (20 BADGES)
@@ -190,6 +232,41 @@ class AppStrings {
   String get badgeForestCreatorDesc => isArabic
       ? 'تنمية 5 نباتات لمرحلة اكتمال النمو.'
       : 'Grown 5 plants to Fully Grown stage.';
+
+  // 21
+  String get badgeMultiCheckinPioneer =>
+      isArabic ? 'المثابر اليومي 💧' : 'Multi-Checkin Pioneer 💧';
+  String get badgeMultiCheckinPioneerDesc => isArabic
+      ? 'إكمال عادة تتطلب أكثر من إنجاز واحد يومياً.'
+      : 'Completed a habit requiring multiple check-ins a day.';
+
+  // 22
+  String get badgeScheduleArchitect =>
+      isArabic ? 'مهندس الجداول 🛡️' : 'Schedule Architect 🛡️';
+  String get badgeScheduleArchitectDesc => isArabic
+      ? 'تخصيص جدول أسبوعي بحديقتك مع أيام راحة مخصصة.'
+      : 'Created a custom habit schedule with off-days.';
+
+  // 23
+  String get badgeReminderSpecialist =>
+      isArabic ? 'خبير التذكيرات 🔔' : 'Reminder Specialist 🔔';
+  String get badgeReminderSpecialistDesc => isArabic
+      ? 'تفعيل أكثر من وقت تذكير محدد لعادة واحدة.'
+      : 'Set multiple active reminder times for a habit.';
+
+  // 24
+  String get badgeBotanicalMaster =>
+      isArabic ? 'بستاني الليل والنهار 🌗' : 'Day & Night Gardener 🌗';
+  String get badgeBotanicalMasterDesc => isArabic
+      ? 'إكمال عادة صباحية وأخرى مسائية في نفس اليوم.'
+      : 'Completed both a morning and an evening habit today.';
+
+  // 25
+  String get badgeYearlyLegend =>
+      isArabic ? 'أسطورة السنة 👑' : 'Yearly Legend 👑';
+  String get badgeYearlyLegendDesc => isArabic
+      ? 'الوصول لسلسلة 180 يوماً متواصلة بالالتزام التام.'
+      : 'Achieved an epic 180-day habit streak.';
 
   String get unlocked => isArabic ? 'مكتسب 🏆' : 'Unlocked 🏆';
 

@@ -1,28 +1,10 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'storage_service.dart';
-
-@pragma('vm:entry-point')
-void _onBackgroundNotificationResponse(NotificationResponse response) async {
-  if (response.actionId == 'action_complete_habit' &&
-      response.payload != null) {
-    WidgetsFlutterBinding.ensureInitialized();
-    final habitId = response.payload!;
-    final storage = StorageService();
-    final habits = await storage.loadHabits();
-    final index = habits.indexWhere((h) => h.id == habitId);
-    if (index != -1) {
-      habits[index].completeToday();
-      await storage.saveHabits(habits);
-      await NotificationService.instance.cancelHabitReminder(habitId);
-    }
-  }
-}
+import '../models/habit.dart';
 
 class NotificationService {
   NotificationService._();
@@ -37,7 +19,6 @@ class NotificationService {
   // ============================================================
 
   static const int _dailyNotificationId = 1001;
-
   static const int _testNotificationId = 999;
 
   // ============================================================
@@ -63,27 +44,7 @@ class NotificationService {
       android: androidSettings,
     );
 
-    await _notifications.initialize(
-      settings: initializationSettings,
-      onDidReceiveNotificationResponse: _onNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse:
-          _onBackgroundNotificationResponse,
-    );
-  }
-
-  void _onNotificationResponse(NotificationResponse response) async {
-    if (response.actionId == 'action_complete_habit' &&
-        response.payload != null) {
-      final habitId = response.payload!;
-      final storage = StorageService();
-      final habits = await storage.loadHabits();
-      final index = habits.indexWhere((h) => h.id == habitId);
-      if (index != -1) {
-        habits[index].completeToday();
-        await storage.saveHabits(habits);
-        await cancelHabitReminder(habitId);
-      }
-    }
+    await _notifications.initialize(settings: initializationSettings);
   }
 
   // ============================================================
@@ -104,13 +65,11 @@ class NotificationService {
   Future<bool> areNotificationsEnabled() async {
     final androidImplementation = _androidImplementation;
 
-    // Non-Android platforms.
     if (androidImplementation == null) {
       return true;
     }
 
     final enabled = await androidImplementation.areNotificationsEnabled();
-
     return enabled ?? false;
   }
 
@@ -121,20 +80,10 @@ class NotificationService {
   Future<bool> requestNotificationPermission() async {
     final androidImplementation = _androidImplementation;
 
-    // Non-Android platforms.
     if (androidImplementation == null) {
       return true;
     }
 
-    // Check current permission first.
-    final alreadyEnabled = await androidImplementation
-        .areNotificationsEnabled();
-
-    if (alreadyEnabled == true) {
-      return true;
-    }
-
-    // Request permission.
     final granted = await androidImplementation
         .requestNotificationsPermission();
 
@@ -148,152 +97,23 @@ class NotificationService {
   Future<bool> requestExactAlarmPermission() async {
     final androidImplementation = _androidImplementation;
 
-    // Non-Android platforms.
     if (androidImplementation == null) {
       return true;
     }
 
-    final canScheduleExact = await androidImplementation
-        .canScheduleExactNotifications();
+    final granted = await androidImplementation.requestExactAlarmsPermission();
 
-    if (canScheduleExact == true) {
-      return true;
-    }
-
-    await androidImplementation.requestExactAlarmsPermission();
-
-    // Check again after returning from settings.
-    final allowedAfterRequest = await androidImplementation
-        .canScheduleExactNotifications();
-
-    return allowedAfterRequest ?? false;
+    return granted ?? true;
   }
 
   // ============================================================
-  // GET NOTIFICATION LANGUAGE
+  // LANGUAGE HELPER
   // ============================================================
 
   Future<bool> _isArabic() async {
     final prefs = await SharedPreferences.getInstance();
-
-    return prefs.getString('app_language') == 'ar';
-  }
-
-  // ============================================================
-  // DAILY REMINDER
-  // ============================================================
-
-  Future<bool> scheduleDailyReminder({
-    required int hour,
-    required int minute,
-  }) async {
-    // ----------------------------------------------------------
-    // Validate time.
-    // ----------------------------------------------------------
-
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-      return false;
-    }
-
-    // ----------------------------------------------------------
-    // Notification permission.
-    // ----------------------------------------------------------
-
-    final notificationPermission = await requestNotificationPermission();
-
-    if (!notificationPermission) {
-      return false;
-    }
-
-    // ----------------------------------------------------------
-    // Exact alarm permission.
-    // ----------------------------------------------------------
-
-    final exactAlarmPermission = await requestExactAlarmPermission();
-
-    if (!exactAlarmPermission) {
-      return false;
-    }
-
-    // ----------------------------------------------------------
-    // Cancel previous daily reminder.
-    // ----------------------------------------------------------
-
-    await cancelDailyReminder();
-
-    // ----------------------------------------------------------
-    // Calculate next notification time.
-    // ----------------------------------------------------------
-
-    final now = tz.TZDateTime.now(tz.local);
-
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-
-    // If today's time has already passed,
-    // schedule it for tomorrow.
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    // ----------------------------------------------------------
-    // Language.
-    // ----------------------------------------------------------
-
-    final isArabic = await _isArabic();
-
-    // ----------------------------------------------------------
-    // Notification channel.
-    // ----------------------------------------------------------
-
-    final androidDetails = AndroidNotificationDetails(
-      'daily_habit_reminders',
-      isArabic ? 'التذكير اليومي' : 'Daily Habit Reminders',
-      channelDescription: isArabic
-          ? 'تذكير يومي لإكمال عاداتك.'
-          : 'Daily reminder to complete your habits.',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    final notificationDetails = NotificationDetails(android: androidDetails);
-
-    // ----------------------------------------------------------
-    // Schedule daily notification.
-    // ----------------------------------------------------------
-
-    try {
-      await _notifications.zonedSchedule(
-        id: _dailyNotificationId,
-
-        title: isArabic
-            ? 'حان وقت تنمية حديقتك 🌱'
-            : 'Time to grow your garden 🌱',
-
-        body: isArabic
-            ? 'عاداتك في انتظارك. حافظ على استمرار سلسلتك!'
-            : 'Your habits are waiting for you. Keep your streak alive!',
-
-        scheduledDate: scheduledDate,
-
-        notificationDetails: notificationDetails,
-
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-
-        // Repeat every day at this time.
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-
-      return true;
-    } catch (_) {
-      return false;
-    }
+    final lang = prefs.getString('app_language');
+    return lang == 'ar';
   }
 
   // ============================================================
@@ -308,17 +128,159 @@ class NotificationService {
   // GET UNIQUE HABIT NOTIFICATION ID
   // ============================================================
 
-  int _notificationId(String habitId) {
-    // Generate a stable positive ID from habit ID.
+  int _notificationId(String habitId, [int subIndex = 0]) {
     final hash = habitId.hashCode.abs();
-
-    // Keep ID away from the daily/test notification IDs.
-    return 10000 + (hash % 2000000000);
+    return 10000 + ((hash + subIndex * 10000) % 2000000000);
   }
 
   // ============================================================
-  // SCHEDULE HABIT REMINDER
+  // SCHEDULE ALL REMINDERS FOR A HABIT
   // ============================================================
+
+  Future<bool> scheduleAllHabitReminders(Habit habit) async {
+    // 1. Cancel all previous notifications for this habit
+    await cancelHabitReminder(habit.id);
+
+    if (!habit.reminderEnabled) {
+      return true;
+    }
+
+    final notificationPermission = await requestNotificationPermission();
+    if (!notificationPermission) return false;
+
+    final exactAlarmPermission = await requestExactAlarmPermission();
+    if (!exactAlarmPermission) return false;
+
+    if (habit.reminderTimes.isEmpty || habit.activeDays.isEmpty) {
+      return true;
+    }
+
+    // Build list of active reminders with their ORIGINAL 1-based reminder index
+    final activeReminders = <Map<String, dynamic>>[];
+    for (int i = 0; i < habit.reminderTimes.length; i++) {
+      final item = habit.reminderTimes[i];
+      if (item['enabled'] != false) {
+        activeReminders.add({
+          'originalNumber': i + 1,
+          'hour': (item['hour'] as num?)?.toInt() ?? 8,
+          'minute': (item['minute'] as num?)?.toInt() ?? 0,
+        });
+      }
+    }
+
+    if (activeReminders.isEmpty) {
+      return true;
+    }
+
+    // Sort active reminders chronologically
+    activeReminders.sort((a, b) {
+      final hA = a['hour'] as int;
+      final mA = a['minute'] as int;
+      final hB = b['hour'] as int;
+      final mB = b['minute'] as int;
+      return (hA * 60 + mA).compareTo(hB * 60 + mB);
+    });
+
+    final now = tz.TZDateTime.now(tz.local);
+    final isArabic = await _isArabic();
+
+    const androidDetails = AndroidNotificationDetails(
+      'habit_reminders_v2',
+      'Habit Reminders',
+      channelDescription: 'Individual reminders for your habits.',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const notificationDetails = NotificationDetails(android: androidDetails);
+
+    int scheduledCount = 0;
+
+    for (
+      int activeIndex = 0;
+      activeIndex < activeReminders.length;
+      activeIndex++
+    ) {
+      final item = activeReminders[activeIndex];
+      final originalNumber = item['originalNumber'] as int;
+      final hour = item['hour'] as int;
+      final minute = item['minute'] as int;
+
+      // Schedule a weekly alarm ONLY for each active day in habit.activeDays!
+      for (final activeDay in habit.activeDays) {
+        var scheduledDate = tz.TZDateTime(
+          tz.local,
+          now.year,
+          now.month,
+          now.day,
+          hour,
+          minute,
+        );
+
+        // Advance to the target active weekday (1 = Mon ... 7 = Sun)
+        int daysUntilTarget = (activeDay - scheduledDate.weekday) % 7;
+        if (daysUntilTarget < 0) daysUntilTarget += 7;
+
+        if (daysUntilTarget == 0 && scheduledDate.isBefore(now)) {
+          daysUntilTarget = 7; // Next week's same day
+        }
+
+        scheduledDate = scheduledDate.add(Duration(days: daysUntilTarget));
+
+        // If scheduled for today, check if this active reminder slot was already satisfied
+        if (daysUntilTarget == 0) {
+          if (activeIndex < habit.todayCheckinsCount ||
+              habit.isCompletedToday) {
+            continue; // Skip this active reminder slot for today
+          }
+        }
+
+        final uniqueId = _notificationId(
+          habit.id,
+          originalNumber * 10 + activeDay,
+        );
+        final reminderLabel = isArabic
+            ? 'تذكير $originalNumber'
+            : 'Reminder $originalNumber';
+
+        try {
+          await _notifications.zonedSchedule(
+            id: uniqueId,
+            title: isArabic ? 'حان وقت عادتك 🌱' : 'Time for your habit 🌱',
+            body: isArabic
+                ? 'حان وقت إكمال "${habit.name}" ($reminderLabel)'
+                : 'It is time to complete "${habit.name}" ($reminderLabel)',
+            scheduledDate: scheduledDate,
+            notificationDetails: notificationDetails,
+            payload: habit.id,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+          );
+          scheduledCount++;
+        } catch (_) {}
+      }
+    }
+
+    return scheduledCount > 0;
+  }
+
+  // Helper backward compatibility methods
+  Future<bool> scheduleDailyReminder({
+    required int hour,
+    required int minute,
+  }) async {
+    final habit = Habit(
+      id: 'daily_general_reminder',
+      name: 'Daily Reminder',
+      description: '',
+      plantType: 'flower',
+      createdAt: DateTime.now(),
+      reminderEnabled: true,
+      reminderHour: hour,
+      reminderMinute: minute,
+    );
+    return scheduleAllHabitReminders(habit);
+  }
 
   Future<bool> scheduleHabitReminder({
     required String habitId,
@@ -326,131 +288,23 @@ class NotificationService {
     required int hour,
     required int minute,
     bool skipToday = false,
+    List<int>? activeDays,
   }) async {
-    // ----------------------------------------------------------
-    // Validate time.
-    // ----------------------------------------------------------
-
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-      return false;
-    }
-
-    // ----------------------------------------------------------
-    // Notification permission.
-    // ----------------------------------------------------------
-
-    final notificationPermission = await requestNotificationPermission();
-
-    if (!notificationPermission) {
-      return false;
-    }
-
-    // ----------------------------------------------------------
-    // Exact alarm permission.
-    // ----------------------------------------------------------
-
-    final exactAlarmPermission = await requestExactAlarmPermission();
-
-    if (!exactAlarmPermission) {
-      return false;
-    }
-
-    // ----------------------------------------------------------
-    // Cancel old reminder for this habit only.
-    // ----------------------------------------------------------
-
-    await cancelHabitReminder(habitId);
-
-    // ----------------------------------------------------------
-    // If habit is already completed today, cancel today's
-    // reminder completely so it does not trigger today.
-    // ----------------------------------------------------------
-
+    final habit = Habit(
+      id: habitId,
+      name: habitName,
+      description: '',
+      plantType: 'flower',
+      createdAt: DateTime.now(),
+      reminderEnabled: true,
+      reminderHour: hour,
+      reminderMinute: minute,
+      activeDays: activeDays,
+    );
     if (skipToday) {
-      return true;
+      habit.completeToday();
     }
-
-    // ----------------------------------------------------------
-    // Calculate next notification time.
-    // ----------------------------------------------------------
-
-    final now = tz.TZDateTime.now(tz.local);
-
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-
-    // If today's time has already passed,
-    // schedule it for tomorrow.
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    // ----------------------------------------------------------
-    // Language.
-    // ----------------------------------------------------------
-
-    final isArabic = await _isArabic();
-
-    // ----------------------------------------------------------
-    // Notification channel.
-    // ----------------------------------------------------------
-
-    final androidDetails = AndroidNotificationDetails(
-      'habit_reminders',
-      isArabic ? 'تذكيرات العادات' : 'Habit Reminders',
-      channelDescription: isArabic
-          ? 'تذكيرات خاصة بكل عادة.'
-          : 'Individual reminders for your habits.',
-      importance: Importance.high,
-      priority: Priority.high,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          'action_complete_habit',
-          isArabic ? 'تم الإنجاز ✓' : 'Complete Habit ✓',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-      ],
-    );
-
-    final notificationDetails = NotificationDetails(android: androidDetails);
-
-    // ----------------------------------------------------------
-    // Schedule notification.
-    // ----------------------------------------------------------
-
-    try {
-      await _notifications.zonedSchedule(
-        id: _notificationId(habitId),
-
-        title: isArabic ? 'حان وقت عادتك 🌱' : 'Time for your habit 🌱',
-
-        body: isArabic
-            ? 'حان وقت إكمال "$habitName"'
-            : 'It is time to complete "$habitName".',
-
-        scheduledDate: scheduledDate,
-
-        notificationDetails: notificationDetails,
-
-        payload: habitId,
-
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-
-        // Repeat every day at this time.
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-
-      return true;
-    } catch (_) {
-      return false;
-    }
+    return scheduleAllHabitReminders(habit);
   }
 
   // ============================================================
@@ -458,7 +312,9 @@ class NotificationService {
   // ============================================================
 
   Future<void> cancelHabitReminder(String habitId) async {
-    await _notifications.cancel(id: _notificationId(habitId));
+    for (int i = 0; i < 50; i++) {
+      await _notifications.cancel(id: _notificationId(habitId, i));
+    }
   }
 
   // ============================================================

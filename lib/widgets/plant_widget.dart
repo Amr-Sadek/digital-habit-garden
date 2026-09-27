@@ -75,50 +75,24 @@ class PlantWidget extends StatelessWidget {
     final plantImage = SizedBox(
       width: size + 30,
       height: size + 30,
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Align(
         alignment: Alignment.bottomCenter,
-        children: [
-          Align(
+        child: SizedBox(
+          width: imageSize,
+          height: imageSize,
+          child: Image.asset(
+            habit.plantImagePath,
+            fit: BoxFit.contain,
             alignment: Alignment.bottomCenter,
-            child: SizedBox(
-              width: imageSize,
-              height: imageSize,
-              child: Image.asset(
-                habit.plantImagePath,
-                fit: BoxFit.contain,
-                alignment: Alignment.bottomCenter,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.yard_outlined,
-                    color: Color(0xFF3E7C4A),
-                    size: 32,
-                  );
-                },
-              ),
-            ),
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.yard_outlined,
+                color: Color(0xFF3E7C4A),
+                size: 32,
+              );
+            },
           ),
-          if (habit.isCompletedToday)
-            Positioned(
-              top: 0,
-              right: 2,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.elasticOut,
-                builder: (context, val, child) {
-                  return Transform.scale(
-                    scale: val,
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 16,
-                      color: Color(0xFFFFC107),
-                    ),
-                  );
-                },
-              ),
-            ),
-        ],
+        ),
       ),
     );
 

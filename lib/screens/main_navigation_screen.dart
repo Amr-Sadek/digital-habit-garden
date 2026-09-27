@@ -23,7 +23,8 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen>
+    with WidgetsBindingObserver {
   final StorageService _storageService = StorageService();
 
   final GardenThemeService _gardenThemeService = GardenThemeService();
@@ -37,6 +38,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   GardenTheme _gardenTheme = GardenTheme.morning;
 
   int _currentIndex = 0;
+  late PageController _pageController;
 
   bool _isLoading = true;
 
@@ -47,8 +49,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-
+    _pageController = PageController(initialPage: _currentIndex);
+    WidgetsBinding.instance.addObserver(this);
     _loadAppData();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadAppData();
+    }
   }
 
   // ============================================================
@@ -62,16 +79,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     // Sync habit reminders according to today's completion state
     for (final habit in habits) {
-      if (habit.reminderEnabled &&
-          habit.reminderHour != null &&
-          habit.reminderMinute != null) {
-        await NotificationService.instance.scheduleHabitReminder(
-          habitId: habit.id,
-          habitName: habit.name,
-          hour: habit.reminderHour!,
-          minute: habit.reminderMinute!,
-          skipToday: habit.isCompletedToday,
-        );
+      if (habit.reminderEnabled) {
+        await NotificationService.instance.scheduleAllHabitReminders(habit);
       }
     }
 
@@ -157,16 +166,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // OPEN HABIT DETAILS
   // ============================================================
 
-  Future<void> _openHabitDetails(Habit habit) async {
+  Future<void> _openHabitDetails(Habit habit, {String? heroTag}) async {
+    final tag = heroTag ?? 'plant_image_${habit.id}';
+
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => HabitDetailsScreen(
-          habit: habit,
-          onToggleHabit: _toggleHabit,
-          onEditHabit: _openEditHabit,
-          onDeleteHabit: _deleteHabit,
-        ),
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 500),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            HabitDetailsScreen(
+              habit: habit,
+              heroTag: tag,
+              onToggleHabit: _toggleHabit,
+              onEditHabit: _openEditHabit,
+              onDeleteHabit: _deleteHabit,
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            child: child,
+          );
+        },
       ),
     );
 
@@ -181,24 +202,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // TOGGLE HABIT
   // ============================================================
 
-  Future<void> _toggleHabit(Habit habit) async {
-    if (habit.isCompletedToday) {
+  Future<void> _toggleHabit(Habit habit, {bool decrement = false}) async {
+    if (!habit.isTodayActive) {
+      return; // Block toggling on off-days!
+    }
+
+    if (decrement) {
+      habit.uncompleteToday();
+    } else if (habit.isCompletedToday) {
       habit.uncompleteToday();
     } else {
       habit.completeToday();
     }
 
     // Reschedule or skip today's notification depending on completion status
-    if (habit.reminderEnabled &&
-        habit.reminderHour != null &&
-        habit.reminderMinute != null) {
-      await NotificationService.instance.scheduleHabitReminder(
-        habitId: habit.id,
-        habitName: habit.name,
-        hour: habit.reminderHour!,
-        minute: habit.reminderMinute!,
-        skipToday: habit.isCompletedToday,
-      );
+    if (habit.reminderEnabled) {
+      await NotificationService.instance.scheduleAllHabitReminders(habit);
     }
 
     if (!mounted) {
@@ -357,7 +376,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final strings = AppStringsScope.of(context);
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _buildScreens()),
+      body: PageView(
+        controller: _pageController,
+        physics: const BouncingScrollPhysics(),
+        onPageChanged: (index) {
+          if (_currentIndex != index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
+        },
+        children: _buildScreens(),
+      ),
 
       // ========================================================
       // BOTTOM NAVIGATION
@@ -366,12 +396,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         selectedIndex: _currentIndex,
 
         onDestinationSelected: (index) {
-          if (_currentIndex == index) {
-            return;
+          if (_currentIndex != index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOutCubic,
+            );
           }
-          setState(() {
-            _currentIndex = index;
-          });
         },
 
         destinations: [
