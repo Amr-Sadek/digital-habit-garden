@@ -122,6 +122,67 @@ class NotificationService {
 
   Future<void> cancelDailyReminder() async {
     await _notifications.cancel(id: _dailyNotificationId);
+    await cancelHabitReminder('daily_general_reminder');
+  }
+
+  // ============================================================
+  // SCHEDULE GENERAL DAILY REMINDER
+  // ============================================================
+
+  Future<bool> scheduleDailyReminder({
+    required int hour,
+    required int minute,
+  }) async {
+    await cancelDailyReminder();
+
+    final permission = await requestNotificationPermission();
+    if (!permission) return false;
+
+    final exactAlarm = await requestExactAlarmPermission();
+    if (!exactAlarm) return false;
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    final isArabic = await _isArabic();
+
+    const androidDetails = AndroidNotificationDetails(
+      'daily_reminder_channel',
+      'Daily Reminder',
+      channelDescription: 'General daily reminder for your habits.',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const notificationDetails = NotificationDetails(android: androidDetails);
+
+    try {
+      await _notifications.zonedSchedule(
+        id: _dailyNotificationId,
+        title: 'Digital Habit Garden 🌱',
+        body: isArabic
+            ? 'حان وقت مراجعة عاداتك اليومية والاعتناء بحديقتك! 🌱'
+            : 'Time to check your daily habits and tend to your garden! 🌱',
+        scheduledDate: scheduledDate,
+        notificationDetails: notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ============================================================
@@ -151,7 +212,11 @@ class NotificationService {
     final exactAlarmPermission = await requestExactAlarmPermission();
     if (!exactAlarmPermission) return false;
 
-    if (habit.reminderTimes.isEmpty || habit.activeDays.isEmpty) {
+    final activeTimes = habit.reminderTimes
+        .where((t) => t['enabled'] != false)
+        .toList();
+
+    if (activeTimes.isEmpty || habit.activeDays.isEmpty) {
       return true;
     }
 
@@ -264,24 +329,7 @@ class NotificationService {
     return scheduledCount > 0;
   }
 
-  // Helper backward compatibility methods
-  Future<bool> scheduleDailyReminder({
-    required int hour,
-    required int minute,
-  }) async {
-    final habit = Habit(
-      id: 'daily_general_reminder',
-      name: 'Daily Reminder',
-      description: '',
-      plantType: 'flower',
-      createdAt: DateTime.now(),
-      reminderEnabled: true,
-      reminderHour: hour,
-      reminderMinute: minute,
-    );
-    return scheduleAllHabitReminders(habit);
-  }
-
+  // Helper backward compatibility method
   Future<bool> scheduleHabitReminder({
     required String habitId,
     required String habitName,

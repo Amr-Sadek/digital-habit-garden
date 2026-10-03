@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
 import '../theme/app_theme.dart';
-
+import '../services/badge_service.dart';
 import '../localization/app_strings.dart';
 import '../services/app_controller.dart';
 import 'notification_settings_screen.dart';
@@ -35,204 +35,42 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _imagePath;
 
   bool _isLoading = true;
-
   bool _isEditingName = false;
 
   late TextEditingController _nameController;
+  Set<String> _unlockedBadgeIds = {};
 
   @override
   void initState() {
     super.initState();
-
     _nameController = TextEditingController();
-
     _loadProfile();
+    _loadBadges();
   }
 
-  // ============================================================
-  // SETTINGS
-  // ============================================================
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.habits, widget.habits)) {
+      _loadBadges();
+    }
+  }
 
-  Future<void> _showSettings() async {
-    final strings = AppStringsScope.of(context);
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Center(
-                  child: Container(
-                    width: 45,
-                    height: 5,
-
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 22),
-
-                Text(
-                  strings.settings,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-
-                const SizedBox(height: 25),
-
-                Text(
-                  strings.appearance,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                _buildThemeOption(
-                  title: strings.light,
-                  icon: Icons.light_mode_outlined,
-                  mode: ThemeMode.light,
-                ),
-
-                _buildThemeOption(
-                  title: strings.dark,
-                  icon: Icons.dark_mode_outlined,
-                  mode: ThemeMode.dark,
-                ),
-
-                _buildThemeOption(
-                  title: strings.system,
-                  icon: Icons.settings_suggest_outlined,
-                  mode: ThemeMode.system,
-                ),
-
-                const SizedBox(height: 18),
-
-                Text(
-                  strings.language,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                _buildLanguageOption(
-                  title: strings.english,
-                  locale: const Locale('en'),
-                ),
-
-                _buildLanguageOption(
-                  title: strings.arabic,
-                  locale: const Locale('ar'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  Future<void> _loadBadges() async {
+    final ids = await BadgeService.instance.evaluateAndSaveBadges(
+      widget.habits,
     );
+    if (mounted) {
+      setState(() {
+        _unlockedBadgeIds = ids;
+      });
+    }
   }
 
-  Widget _buildThemeOption({
-    required String title,
-    required IconData icon,
-    required ThemeMode mode,
-  }) {
-    final controller = AppController.instance;
-
-    final selected = controller.themeMode == mode;
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-
-      leading: Icon(icon, color: AppTheme.primaryColor),
-
-      title: Text(title),
-
-      trailing: Radio<ThemeMode>(
-        value: mode,
-        groupValue: controller.themeMode,
-
-        onChanged: (value) {
-          if (value == null) return;
-
-          controller.setThemeMode(value);
-        },
-      ),
-
-      onTap: () {
-        controller.setThemeMode(mode);
-      },
-
-      selected: selected,
-    );
-  }
-
-  Widget _buildLanguageOption({required String title, required Locale locale}) {
-    final controller = AppController.instance;
-
-    final selected = controller.locale.languageCode == locale.languageCode;
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-
-      leading: const Icon(
-        Icons.language_outlined,
-        color: AppTheme.primaryColor,
-      ),
-
-      title: Text(title),
-
-      trailing: Radio<String>(
-        value: locale.languageCode,
-
-        groupValue: controller.locale.languageCode,
-
-        onChanged: (value) {
-          if (value == null) return;
-
-          controller.setLanguage(locale);
-        },
-      ),
-
-      onTap: () {
-        controller.setLanguage(locale);
-      },
-
-      selected: selected,
-    );
-  }
-
-  // ============================================================
-  // LOAD PROFILE
-  // ============================================================
+  int get _unlockedBadgesCount => _unlockedBadgeIds.length;
 
   Future<void> _loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
-
     final savedName = prefs.getString(_nameKey);
     final savedImage = prefs.getString(_imageKey);
 
@@ -245,15 +83,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       _nameController.text = loadedName == strings.habitGardener
           ? ''
           : loadedName;
-
       _imagePath = savedImage;
       _isLoading = false;
     });
   }
-
-  // ============================================================
-  // PICK PROFILE IMAGE
-  // ============================================================
 
   Future<void> _pickProfileImage() async {
     try {
@@ -266,23 +99,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (image == null) return;
 
       final prefs = await SharedPreferences.getInstance();
-
       await prefs.setString(_imageKey, image.path);
-
-      if (!mounted) return;
 
       setState(() {
         _imagePath = image.path;
       });
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStringsScope.of(context).couldNotSelectImage),
-        ),
-      );
-    }
+    } catch (_) {}
   }
 
   void _startEditingName() {
@@ -292,23 +114,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _saveEditedName() async {
-    final name = _nameController.text.trim();
-
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStringsScope.of(context).pleaseEnterName)),
-      );
-      return;
-    }
+    final newName = _nameController.text.trim();
+    final finalName = newName.isEmpty ? strings.habitGardener : newName;
 
     final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString(_nameKey, name);
-
-    if (!mounted) return;
+    await prefs.setString(_nameKey, finalName);
 
     setState(() {
-      _name = name;
+      _name = finalName;
       _isEditingName = false;
     });
   }
@@ -316,135 +129,73 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _cancelEditingName() {
     setState(() {
       _nameController.text = _name == strings.habitGardener ? '' : _name;
-
       _isEditingName = false;
     });
   }
 
-  // ============================================================
-  // BADGES & ACHIEVEMENTS (20 BADGES)
-  // ============================================================
+  void _showSettings() {
+    final strings = AppStringsScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  int get _totalCompletedCheckins {
-    return widget.habits.fold<int>(
-      0,
-      (sum, h) => sum + h.completedDates.length,
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF182019) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                strings.settings,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.language_outlined),
+                title: Text(strings.language),
+                subtitle: Text(strings.isArabic ? 'العربية' : 'English'),
+                trailing: Switch(
+                  value: strings.isArabic,
+                  onChanged: (val) {
+                    AppController.instance.setLanguage(
+                      val ? const Locale('ar') : const Locale('en'),
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.palette_outlined),
+                title: Text(strings.isArabic ? 'الوضع الداكن' : 'Dark Mode'),
+                subtitle: Text(
+                  AppController.instance.themeMode == ThemeMode.dark
+                      ? (strings.isArabic ? 'مفعل' : 'Enabled')
+                      : (strings.isArabic ? 'معطل' : 'Disabled'),
+                ),
+                trailing: Switch(
+                  value: AppController.instance.themeMode == ThemeMode.dark,
+                  onChanged: (val) {
+                    AppController.instance.setThemeMode(
+                      val ? ThemeMode.dark : ThemeMode.light,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-  }
-
-  // 1
-  bool get _hasFirstSprout =>
-      widget.habits.any((h) => h.completedDates.isNotEmpty);
-  // 2
-  bool get _hasFirstHabit => widget.habits.isNotEmpty;
-  // 3
-  bool get _hasPerfectDay =>
-      widget.habits.isNotEmpty &&
-      widget.habits.every((h) => h.isCompletedToday);
-  // 4
-  bool get _hasEarlyBird {
-    final now = DateTime.now();
-    return widget.habits.any((h) => h.isCompletedToday && now.hour < 9);
-  }
-
-  // 5
-  bool get _hasNightOwl {
-    final now = DateTime.now();
-    return widget.habits.any((h) => h.isCompletedToday && now.hour >= 21);
-  }
-
-  // 6
-  bool get _has3DaySpark => widget.habits.any((h) => h.currentStreak >= 3);
-  // 7
-  bool get _hasStreakMaster => widget.habits.any((h) => h.currentStreak >= 7);
-  // 8
-  bool get _has2WeekWarrior => widget.habits.any((h) => h.currentStreak >= 14);
-  // 9
-  bool get _hasMultiTasker => widget.habits.length >= 3;
-  // 10
-  bool get _hasReminderSet => widget.habits.any((h) => h.reminderEnabled);
-  // 11
-  bool get _hasCentury => _totalCompletedCheckins >= 100;
-  // 12
-  bool get _hasFirstBloom => widget.habits.any((h) => h.currentStreak >= 25);
-  // 13
-  bool get _hasThrivingGarden =>
-      widget.habits.where((h) => h.currentStreak >= 10).length >= 3;
-  // 14
-  bool get _hasWeeklyHero {
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    for (int i = 0; i < 7; i++) {
-      final date = todayDate.subtract(Duration(days: i));
-      final dateStr =
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      final completedAny = widget.habits.any(
-        (h) => h.completedDates.contains(dateStr),
-      );
-      if (!completedAny) return false;
-    }
-    return widget.habits.isNotEmpty;
-  }
-
-  // 15
-  bool get _hasCollector => widget.habits.length >= 5;
-  // 16
-  bool get _hasUnstoppable => widget.habits.any((h) => h.currentStreak >= 30);
-  // 17
-  bool get _has60DayTitan => widget.habits.any((h) => h.currentStreak >= 60);
-  // 18
-  bool get _hasMasterGardener =>
-      widget.habits.any((h) => h.currentStreak >= 100);
-  // 19
-  bool get _hasLegend => _totalCompletedCheckins >= 500;
-  // 20
-  bool get _hasForestCreator =>
-      widget.habits.where((h) => h.currentStreak >= 31).length >= 5;
-  // 21
-  bool get _hasMultiCheckinPioneer =>
-      widget.habits.any((h) => h.targetCount > 1 && h.isCompletedToday);
-  // 22
-  bool get _hasScheduleArchitect =>
-      widget.habits.any((h) => h.activeDays.length < 7);
-  // 23
-  bool get _hasReminderSpecialist => widget.habits.any(
-    (h) =>
-        h.reminderEnabled &&
-        h.reminderTimes.where((t) => t['enabled'] != false).length > 1,
-  );
-  // 24
-  bool get _hasBotanicalMaster => _hasEarlyBird && _hasNightOwl;
-  // 25
-  bool get _hasYearlyLegend => widget.habits.any((h) => h.currentStreak >= 180);
-
-  int get _unlockedBadgesCount {
-    int count = 0;
-    if (_hasFirstSprout) count++;
-    if (_hasFirstHabit) count++;
-    if (_hasPerfectDay) count++;
-    if (_hasEarlyBird) count++;
-    if (_hasNightOwl) count++;
-    if (_has3DaySpark) count++;
-    if (_hasStreakMaster) count++;
-    if (_has2WeekWarrior) count++;
-    if (_hasMultiTasker) count++;
-    if (_hasReminderSet) count++;
-    if (_hasCentury) count++;
-    if (_hasFirstBloom) count++;
-    if (_hasThrivingGarden) count++;
-    if (_hasWeeklyHero) count++;
-    if (_hasCollector) count++;
-    if (_hasUnstoppable) count++;
-    if (_has60DayTitan) count++;
-    if (_hasMasterGardener) count++;
-    if (_hasLegend) count++;
-    if (_hasForestCreator) count++;
-    if (_hasMultiCheckinPioneer) count++;
-    if (_hasScheduleArchitect) count++;
-    if (_hasReminderSpecialist) count++;
-    if (_hasBotanicalMaster) count++;
-    if (_hasYearlyLegend) count++;
-    return count;
   }
 
   void _showAchievementsModal(BuildContext context) {
@@ -538,13 +289,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                       mainAxisSpacing: 10,
                       childAspectRatio: 1.20,
                       children: [
-                        // Group 1: Starter Milestones (البدايات الأولى)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeFirstHabit,
                           description: strings.badgeFirstHabitDesc,
                           icon: Icons.eco_outlined,
-                          isUnlocked: _hasFirstHabit,
+                          isUnlocked: _unlockedBadgeIds.contains('first_seed'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -553,7 +303,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeFirstSprout,
                           description: strings.badgeFirstSproutDesc,
                           icon: Icons.emoji_events_outlined,
-                          isUnlocked: _hasFirstSprout,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'first_sprout',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -562,18 +314,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgePerfectDay,
                           description: strings.badgePerfectDayDesc,
                           icon: Icons.star_outline_rounded,
-                          isUnlocked: _hasPerfectDay,
+                          isUnlocked: _unlockedBadgeIds.contains('perfect_day'),
                           isDark: isDark,
                           strings: strings,
                         ),
-
-                        // Group 2: Daily Customization & Timing (التخصيص والتوقيت)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeEarlyBird,
                           description: strings.badgeEarlyBirdDesc,
                           icon: Icons.wb_sunny_outlined,
-                          isUnlocked: _hasEarlyBird,
+                          isUnlocked: _unlockedBadgeIds.contains('early_bird'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -582,7 +332,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeNightOwl,
                           description: strings.badgeNightOwlDesc,
                           icon: Icons.nightlight_round_outlined,
-                          isUnlocked: _hasNightOwl,
+                          isUnlocked: _unlockedBadgeIds.contains('night_owl'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -591,7 +341,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeBotanicalMaster,
                           description: strings.badgeBotanicalMasterDesc,
                           icon: Icons.contrast_rounded,
-                          isUnlocked: _hasBotanicalMaster,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'day_night_gardener',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -600,7 +352,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeMultiCheckinPioneer,
                           description: strings.badgeMultiCheckinPioneerDesc,
                           icon: Icons.water_drop_outlined,
-                          isUnlocked: _hasMultiCheckinPioneer,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'multi_checkin_pioneer',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -609,7 +363,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeScheduleArchitect,
                           description: strings.badgeScheduleArchitectDesc,
                           icon: Icons.shield_outlined,
-                          isUnlocked: _hasScheduleArchitect,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'schedule_architect',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -618,7 +374,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeReminderSet,
                           description: strings.badgeReminderSetDesc,
                           icon: Icons.notifications_active_outlined,
-                          isUnlocked: _hasReminderSet,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'smart_reminder',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -627,18 +385,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeReminderSpecialist,
                           description: strings.badgeReminderSpecialistDesc,
                           icon: Icons.add_alert_outlined,
-                          isUnlocked: _hasReminderSpecialist,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'reminder_specialist',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
-
-                        // Group 3: Streak Milestones (سلاسل الالتزام)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badge3DaySpark,
                           description: strings.badge3DaySparkDesc,
                           icon: Icons.local_fire_department_outlined,
-                          isUnlocked: _has3DaySpark,
+                          isUnlocked: _unlockedBadgeIds.contains('spark_3day'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -647,7 +405,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeStreakMaster,
                           description: strings.badgeStreakMasterDesc,
                           icon: Icons.bolt_outlined,
-                          isUnlocked: _hasStreakMaster,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'streak_master',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -656,7 +416,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badge2WeekWarrior,
                           description: strings.badge2WeekWarriorDesc,
                           icon: Icons.workspace_premium_outlined,
-                          isUnlocked: _has2WeekWarrior,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'warrior_2week',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -665,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeWeeklyHero,
                           description: strings.badgeWeeklyHeroDesc,
                           icon: Icons.calendar_month_outlined,
-                          isUnlocked: _hasWeeklyHero,
+                          isUnlocked: _unlockedBadgeIds.contains('weekly_hero'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -674,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeUnstoppable,
                           description: strings.badgeUnstoppableDesc,
                           icon: Icons.rocket_launch_outlined,
-                          isUnlocked: _hasUnstoppable,
+                          isUnlocked: _unlockedBadgeIds.contains('unstoppable'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -683,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badge60DayTitan,
                           description: strings.badge60DayTitanDesc,
                           icon: Icons.military_tech_outlined,
-                          isUnlocked: _has60DayTitan,
+                          isUnlocked: _unlockedBadgeIds.contains('titan_60day'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -692,7 +454,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeMasterGardener,
                           description: strings.badgeMasterGardenerDesc,
                           icon: Icons.military_tech_rounded,
-                          isUnlocked: _hasMasterGardener,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'master_gardener',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -701,18 +465,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeYearlyLegend,
                           description: strings.badgeYearlyLegendDesc,
                           icon: Icons.diamond_outlined,
-                          isUnlocked: _hasYearlyLegend,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'yearly_legend',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
-
-                        // Group 4: Quantity Milestones (عدد العادات)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeMultiTasker,
                           description: strings.badgeMultiTaskerDesc,
                           icon: Icons.grass_outlined,
-                          isUnlocked: _hasMultiTasker,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'active_gardener',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -721,18 +487,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeCollector,
                           description: strings.badgeCollectorDesc,
                           icon: Icons.yard_outlined,
-                          isUnlocked: _hasCollector,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'habit_collector',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
-
-                        // Group 5: Total Check-ins Milestones (إجمالي الإنجازات)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeCentury,
                           description: strings.badgeCenturyDesc,
                           icon: Icons.auto_awesome_motion_outlined,
-                          isUnlocked: _hasCentury,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'habit_century',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -741,18 +509,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeLegend,
                           description: strings.badgeLegendDesc,
                           icon: Icons.auto_awesome_rounded,
-                          isUnlocked: _hasLegend,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'habit_legend',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
-
-                        // Group 6: Plant Growth Milestones (نمو النباتات)
                         _buildBadgeCard(
                           context: context,
                           title: strings.badgeFirstBloom,
                           description: strings.badgeFirstBloomDesc,
                           icon: Icons.local_florist_outlined,
-                          isUnlocked: _hasFirstBloom,
+                          isUnlocked: _unlockedBadgeIds.contains('first_bloom'),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -761,7 +529,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeThrivingGarden,
                           description: strings.badgeThrivingGardenDesc,
                           icon: Icons.park_outlined,
-                          isUnlocked: _hasThrivingGarden,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'thriving_garden',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -770,7 +540,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           title: strings.badgeForestCreator,
                           description: strings.badgeForestCreatorDesc,
                           icon: Icons.forest_outlined,
-                          isUnlocked: _hasForestCreator,
+                          isUnlocked: _unlockedBadgeIds.contains(
+                            'forest_creator',
+                          ),
                           isDark: isDark,
                           strings: strings,
                         ),
@@ -900,24 +672,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ============================================================
-  // PROFILE IMAGE
-  // ============================================================
-
   Widget _buildProfileImage() {
     final hasImage = _imagePath != null && File(_imagePath!).existsSync();
 
     return Container(
       width: 108,
       height: 108,
-
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-
         color: Colors.white,
-
         border: Border.all(color: Colors.white, width: 4),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -926,7 +690,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
-
       child: ClipOval(
         child: hasImage
             ? Image.file(File(_imagePath!), fit: BoxFit.cover)
@@ -935,19 +698,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ============================================================
-  // DISPOSE
-  // ============================================================
-
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
   }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -961,62 +716,43 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.profileTitle)),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-
         child: Column(
           children: [
             const SizedBox(height: 10),
-
-            // ==================================================
-            // PROFILE HEADER
-            // ==================================================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 25),
-
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     AppTheme.primaryColor,
                     AppTheme.primaryColor.withValues(alpha: 0.75),
                   ],
-
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-
                 borderRadius: BorderRadius.circular(28),
               ),
-
               child: Column(
                 children: [
-                  // ------------------------------
-                  // PROFILE IMAGE
-                  // ------------------------------
                   GestureDetector(
                     onTap: _pickProfileImage,
-
                     child: Stack(
                       alignment: Alignment.bottomRight,
-
                       children: [
                         _buildProfileImage(),
-
                         Container(
                           width: 36,
                           height: 36,
-
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-
                             border: Border.all(
                               color: AppTheme.primaryColor,
                               width: 2,
                             ),
-
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.15),
@@ -1024,7 +760,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                             ],
                           ),
-
                           child: Icon(
                             Icons.camera_alt_outlined,
                             size: 18,
@@ -1034,67 +769,69 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // ------------------------------
-                  // NAME + EDIT ICON
-                  // ------------------------------
                   if (_isEditingName)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
                           width: 190,
-                          child: TextField(
-                            controller: _nameController,
-                            autofocus: true,
-                            textAlign: TextAlign.center,
-                            textCapitalization: TextCapitalization.words,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : AppTheme.textColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            cursorColor: isDark
-                                ? Colors.white
-                                : AppTheme.primaryColor,
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: isDark
-                                  ? Colors.white.withValues(alpha: 0.20)
-                                  : Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              hintText: strings.yourName,
-                              hintStyle: TextStyle(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.6)
-                                    : Colors.grey.shade500,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              TextField(
+                                controller: _nameController,
+                                autofocus: true,
+                                textAlign: TextAlign.center,
+                                textCapitalization: TextCapitalization.words,
+                                style: TextStyle(
                                   color: isDark
                                       ? Colors.white
-                                      : AppTheme.primaryColor,
-                                  width: 1.5,
+                                      : AppTheme.textColor,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
                                 ),
+                                cursorColor: isDark
+                                    ? Colors.white
+                                    : AppTheme.primaryColor,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: isDark
+                                      ? Colors.white.withValues(alpha: 0.20)
+                                      : Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  hintText: strings.yourName,
+                                  hintStyle: TextStyle(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.6)
+                                        : Colors.grey.shade500,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppTheme.primaryColor,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                onSubmitted: (_) {
+                                  _saveEditedName();
+                                },
                               ),
-                            ),
-                            onSubmitted: (_) {
-                              _saveEditedName();
-                            },
+                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1175,9 +912,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ],
                     ),
-
                   const SizedBox(height: 6),
-
                   Text(
                     strings.growingBetterHabits,
                     style: TextStyle(
@@ -1185,9 +920,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       fontSize: 14,
                     ),
                   ),
-
                   const SizedBox(height: 6),
-
                   Text(
                     strings.tapPhoto,
                     style: TextStyle(
@@ -1198,12 +931,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
             ),
-
             const SizedBox(height: 22),
-
-            // ==================================================
-            // ACHIEVEMENTS & BADGES BUTTON
-            // ==================================================
             Card(
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
@@ -1247,71 +975,49 @@ class _ProfileScreenState extends State<ProfileScreen>
                 onTap: () => _showAchievementsModal(context),
               ),
             ),
-
             const SizedBox(height: 22),
-
-            // ==================================================
-            // PREFERENCES
-            // ==================================================
             Align(
               alignment: AlignmentDirectional.centerStart,
-
               child: Text(
                 AppStringsScope.of(context).preferences,
-
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             Card(
               child: Column(
                 children: [
-                  // ==================================================
-                  // NOTIFICATIONS
-                  // ==================================================
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 18,
                       vertical: 6,
                     ),
-
                     leading: Container(
                       width: 46,
                       height: 46,
-
                       decoration: BoxDecoration(
                         color: AppTheme.secondaryColor.withValues(alpha: 0.18),
-
                         borderRadius: BorderRadius.circular(14),
                       ),
-
                       child: const Icon(
                         Icons.notifications_active_outlined,
                         color: AppTheme.primaryColor,
                       ),
                     ),
-
                     title: Text(
                       AppStringsScope.of(context).notifications,
-
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-
                     subtitle: Text(
                       AppStringsScope.of(context).dailyHabitReminders,
                     ),
-
                     trailing: const Icon(Icons.chevron_right),
-
                     onTap: () {
                       Navigator.push(
                         context,
-
                         MaterialPageRoute(
                           builder: (context) =>
                               const NotificationSettingsScreen(),
@@ -1319,51 +1025,36 @@ class _ProfileScreenState extends State<ProfileScreen>
                       );
                     },
                   ),
-
                   const Divider(height: 1),
-
-                  // ==================================================
-                  // SETTINGS
-                  // ==================================================
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 18,
                       vertical: 6,
                     ),
-
                     leading: Container(
                       width: 46,
                       height: 46,
-
                       decoration: BoxDecoration(
                         color: AppTheme.secondaryColor.withValues(alpha: 0.18),
-
                         borderRadius: BorderRadius.circular(14),
                       ),
-
                       child: const Icon(
                         Icons.settings_outlined,
                         color: AppTheme.primaryColor,
                       ),
                     ),
-
                     title: Text(
                       AppStringsScope.of(context).settings,
-
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-
                     subtitle: Text(AppStringsScope.of(context).appPreferences),
-
                     trailing: const Icon(Icons.chevron_right),
-
                     onTap: _showSettings,
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
           ],
         ),
       ),
