@@ -4,6 +4,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'app_controller.dart';
 import '../models/habit.dart';
 
 class NotificationService {
@@ -111,6 +112,15 @@ class NotificationService {
   // ============================================================
 
   Future<bool> _isArabic() async {
+    try {
+      if (AppController.instance.locale.languageCode == 'ar') {
+        return true;
+      }
+      if (AppController.instance.locale.languageCode == 'en') {
+        return false;
+      }
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     final lang = prefs.getString('app_language');
     return lang == 'ar';

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'storage_service.dart';
+import 'notification_service.dart';
+
 class AppController extends ChangeNotifier {
   AppController._();
 
@@ -110,15 +113,24 @@ class AppController extends ChangeNotifier {
   }
 
   // ============================================================
-  // CHANGE LANGUAGE
+  // CHANGE LANGUAGE (AND RESCHEDULE ALL NOTIFICATIONS TO MATCH)
   // ============================================================
 
   Future<void> setLanguage(Locale locale) async {
     _locale = locale;
 
     final prefs = await SharedPreferences.getInstance();
-
     await prefs.setString(_languageKey, locale.languageCode);
+
+    try {
+      final storage = StorageService();
+      final habits = await storage.loadHabits();
+      for (final habit in habits) {
+        if (habit.reminderEnabled) {
+          await NotificationService.instance.scheduleAllHabitReminders(habit);
+        }
+      }
+    } catch (_) {}
 
     notifyListeners();
   }
